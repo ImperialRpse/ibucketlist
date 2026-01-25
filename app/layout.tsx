@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from 'next/link'
 import "./globals.css";
+import Nav from './components/Nav'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +29,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* 全ページ共通のナビゲーションバー */}
+        <nav className="flex gap-4 p-4 bg-gray-100 border-b text-black">
+          <Link href="/profile" className="hover:underline font-bold">
+            プロファイル
+          </Link>
+          <Link href="/timeline" className="hover:underline font-bold">
+            タイムライン
+          </Link>
+          <Link href="/login" className="ml-auto hover:underline text-gray-600">
+            ログイン
+          </Link>
+        </nav>
         {children}
       </body>
     </html>
