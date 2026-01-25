@@ -45,9 +45,15 @@ const fetchItems = async () => {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">My Bucket List</h1>
-      
 
+      <div className="flex justify-between items-center mb-6">
+      <h1 className="text-2xl font-bold">マイプロフィール</h1>
+      <Link href="/profile/settings" className="text-gray-400 hover:text-blue-500 transition-colors">
+      ⚙️ 設定
+      </Link>d
+      </div>
+
+      <h1 className="text-2xl font-bold mb-4">My Bucket List</h1>
       {/* リスト表示 */}
       <ul className="space-y-2">
         {items.map((item) => (
