@@ -47,16 +47,6 @@ const fetchItems = async () => {
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">My Bucket List</h1>
       
-      {/* 入力フォーム */}
-      <form onSubmit={addItem} className="flex gap-2 mb-6">
-        <input
-          className="border p-2 flex-grow rounded bg-white text-black"
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder="死ぬまでにやりたいことは？"
-        />
-        <button className="bg-blue-500 text-white px-4 py-2 rounded">追加</button>
-      </form>
 
       {/* リスト表示 */}
       <ul className="space-y-2">
@@ -67,15 +57,21 @@ const fetchItems = async () => {
           </li>
         ))}
       </ul>
-      <Link href="/add">
-        <button className="fixed bottom-10 right-10 w-16 h-16 bg-blue-500 text-white rounded-full shadow-lg text-3xl flex items-center justify-center hover:bg-blue-600 transition-colors">
-          ＋
-        </button>
-      </Link>
+      {/* 右下の＋ボタン */}
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-10 right-10 w-16 h-16 bg-blue-500 text-white rounded-full shadow-2xl text-3xl flex items-center justify-center hover:scale-110 transition-transform"
+      >
+        ＋
+      </button>
+
       {/* ポップアップ（モーダル） */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl w-80 shadow-xl">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          {/* モーダルの外側をクリックしたら閉じるための透明な層 */}
+          <div className="absolute inset-0" onClick={() => setIsOpen(false)}></div>
+          {/* 入力フォーム本体 */}
+          <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl relative z-10 animate-in fade-in zoom-in duration-200">
             <h2 className="text-black font-bold mb-4 text-center">新しい「やりたいこと」</h2>
             <input 
               className="w-full border p-2 rounded mb-4 text-black bg-gray-50"
