@@ -7,9 +7,22 @@ export default function Nav() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. 初回読み込み時のユーザーチェック
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserEmail(user.email ?? null);
+      setUserEmail(user?.email ?? null);
     });
+
+    // 2. 💡 ログイン・ログアウトの「変化」をリアルタイムで監視する
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        setUserEmail(session.user.email ?? null);
+      } else if (event === 'SIGNED_OUT') {
+        setUserEmail(null);
+      }
+    });
+
+    // コンポーネントが消える時に監視を止める（お作法）
+    return () => subscription.unsubscribe();
   }, []);
 
   return (

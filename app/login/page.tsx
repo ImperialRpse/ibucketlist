@@ -27,7 +27,7 @@ export default function LoginPage() {
     if (error) alert(error.message);
     else {
       alert('ログイン成功！');
-      router.push('/bucket-list'); // ログイン後にリスト画面へ移動
+      router.push('/'); // ログイン後にリスト画面へ移動
     }
   };
 

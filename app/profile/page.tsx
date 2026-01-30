@@ -50,7 +50,7 @@ const fetchItems = async () => {
       <h1 className="text-2xl font-bold">マイプロフィール</h1>
       <Link href="/profile/settings" className="text-gray-400 hover:text-blue-500 transition-colors">
       ⚙️ 設定
-      </Link>d
+      </Link>
       </div>
 
       <h1 className="text-2xl font-bold mb-4">My Bucket List</h1>
