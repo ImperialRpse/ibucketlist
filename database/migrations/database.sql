@@ -56,3 +56,28 @@ create policy "誰でも写真を見れる" on storage.objects for select using 
 create policy "ログインしていればアップロードできる" on storage.objects for insert with check (
   bucket_id = 'bucket_photos' AND auth.role() = 'authenticated'
 );
+
+-- profilesテーブルに bio カラムを追加（最大255文字程度のテキスト）
+alter table public.profiles 
+add column if not exists bio text;
+
+-- 1. 新しいユーザーが作成された時に実行される関数を作る
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, display_name)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'display_name' -- ここでsignUp時の名前を取り出す
+  );
+  return new;
+end;
+$$;
+
+-- 2. auth.usersにデータが入った瞬間に上の関数を動かすトリガーを設定
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();

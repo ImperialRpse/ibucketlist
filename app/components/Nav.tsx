@@ -26,7 +26,7 @@ export default function Nav() {
   }, []);
 
   return (
-    <nav className="flex justify-between items-center p-4 bg-white border-b sticky top-0 z-40">
+    <nav className="flex justify-between items-center p-4 bg-transparent sticky top-0 z-40">
       <Link href="/" className="text-xl font-extrabold text-blue-600 tracking-tighter">
         BUCKET LIST
       </Link>
