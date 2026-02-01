@@ -161,7 +161,7 @@ export default function BucketListPage() {
                   <img 
                     src={item.image_url} 
                     alt="思い出" 
-                    className="w-full h-40 object-cover rounded-2xl mb-3 shadow-sm"
+                    className="w-full max-h-96 object-contain rounded-2xl mb-3 shadow-sm bg-gray-50"
                   />
                 )}
                 {item.reflection && (
@@ -231,10 +231,10 @@ export default function BucketListPage() {
                   />
                   
                   {previewUrl ? (
-                    <div className="relative h-40 w-full">
+                    <div className="relative min-h-40 w-full bg-gray-50 rounded-xl flex items-center justify-center">
                       <img 
                         src={previewUrl} 
-                        className="w-full h-full object-cover rounded-xl" 
+                        className="w-full max-h-96 object-contain rounded-xl" 
                         alt="Preview" 
                       />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
