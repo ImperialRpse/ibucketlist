@@ -62,7 +62,7 @@ export default function TimelinePage() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-8 text-center text-white">Everyone's Bucket List</h1>
-      
+
       <div className="grid gap-4">
         {items.map((item) => {
           // 自分がいいねしているか判定
@@ -73,22 +73,38 @@ export default function TimelinePage() {
             <div key={item.id} className="p-6 border rounded-2xl shadow-sm bg-white text-black border-gray-200 transition-all">
               <p className="text-sm font-bold text-blue-600 mb-1">
                 {item.profiles ? (
-                  Array.isArray(item.profiles) 
-                  ? item.profiles[0]?.display_name 
-                  : item.profiles.display_name
+                  Array.isArray(item.profiles)
+                    ? item.profiles[0]?.display_name
+                    : item.profiles.display_name
                 ) : '名無しのユーザー'}
               </p>
-              
+
               <p className="text-lg font-semibold mb-4 text-gray-800">{item.title}</p>
-              
+
+              {/* 💡 追加: 完了済みの場合は写真と感想を表示 */}
+              {item.is_completed && (
+                <div className="mb-4 space-y-3">
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      className="w-full h-96 object-contain rounded-2xl shadow-inner border border-gray-50"
+                    />
+                  )}
+                  {item.reflection && (
+                    <p className="text-gray-600 text-sm bg-gray-50 p-4 rounded-2xl italic border-l-4 border-green-400">
+                      “{item.reflection}”
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="flex justify-between items-center border-t pt-4">
                 {/* いいねボタンセクション */}
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={() => toggleLike(item.id, isLikedByMe)}
-                    className={`text-2xl transition-all duration-200 active:scale-150 ${
-                      isLikedByMe ? 'text-pink-500' : 'text-gray-300 hover:text-gray-400'
-                    }`}
+                    className={`text-2xl transition-all duration-200 active:scale-150 ${isLikedByMe ? 'text-pink-500' : 'text-gray-300 hover:text-gray-400'
+                      }`}
                   >
                     {isLikedByMe ? '❤️' : '♡'}
                   </button>
@@ -103,7 +119,7 @@ export default function TimelinePage() {
           );
         })}
       </div>
-      
+
       {items.length === 0 && (
         <p className="text-center text-gray-500 mt-10">まだ投稿がありません。</p>
       )}
