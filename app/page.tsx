@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 
 export default function TimelinePage() {
   const [items, setItems] = useState<any[]>([]);
@@ -71,14 +72,13 @@ export default function TimelinePage() {
 
           return (
             <div key={item.id} className="p-6 border rounded-2xl shadow-sm bg-white text-black border-gray-200 transition-all">
-              <p className="text-sm font-bold text-blue-600 mb-1">
-                {item.profiles ? (
-                  Array.isArray(item.profiles)
-                    ? item.profiles[0]?.display_name
-                    : item.profiles.display_name
-                ) : '名無しのユーザー'}
-              </p>
-
+              {/* タイムラインの各アイテム内 */}
+              <Link href={`/profile/${item.user_id}`}>
+               <p className="text-sm font-bold text-blue-600 mb-1 cursor-pointer hover:underline">
+                {item.profiles?.display_name || '名無しのユーザー'}
+               </p>
+              </Link>
+              {/* タイトル */}
               <p className="text-lg font-semibold mb-4 text-gray-800">{item.title}</p>
 
               {/* 💡 追加: 完了済みの場合は写真と感想を表示 */}
