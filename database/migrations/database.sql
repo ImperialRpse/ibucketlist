@@ -81,3 +81,28 @@ $$;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+
+  -- follows テーブルの作成
+create table public.follows (
+  follower_id uuid references auth.users not null, -- フォローする人
+  following_id uuid references auth.users not null, -- フォローされる人
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  
+  -- 同じ人を二度フォローできないようにユニーク制約をかける
+  primary key (follower_id, following_id)
+);
+
+-- RLS（セキュリティ）の設定
+alter table public.follows enable row level security;
+
+-- 1. 誰でもフォロー関係を見ることができる
+create policy "Everyone can view follows" on follows for select using (true);
+
+-- 2. ログインしていればフォローできる（自分自身としてのみ）
+create policy "Users can follow others" on follows for insert 
+with check (auth.uid() = follower_id);
+
+-- 3. フォローを解除できる
+create policy "Users can unfollow" on follows for delete 
+using (auth.uid() = follower_id);

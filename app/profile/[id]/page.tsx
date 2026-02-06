@@ -21,47 +21,92 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
-  // 1. データの取得
-  const fetchProfileData = async () => {
-    // 現在のログインユーザーを取得
+  // 💡 データの統合取得関数
+  const fetchAllData = async () => {
+    setLoading(true);
+
+    // 1. 自分の情報を取得
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     const currentIsMe = currentUser?.id === profileUserId;
     setIsMe(currentIsMe);
 
-    // 表示対象ユーザーの投稿とプロフィールを取得
-    const { data, error } = await supabase
+    // 2. 投稿とプロフィールを取得
+    const { data: bucketData } = await supabase
       .from('bucket_items')
-      .select(`
-        *,
-        profiles (
-          display_name,
-          bio
-        )
-      `)
+      .select('*, profiles(display_name, bio)')
       .eq('user_id', profileUserId)
-      .order('is_completed', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (data) {
-      setItems(data);
-      // profilesの情報は1つ目から取得、データがない場合は別途取得
-      if (data.length > 0) {
-        setProfile(data[0].profiles);
-      } else {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('display_name, bio')
-          .eq('id', profileUserId)
-          .single();
-        if (prof) setProfile(prof);
+    if (bucketData) {
+      setItems(bucketData);
+      if (bucketData.length > 0) setProfile(bucketData[0].profiles);
+      else {
+        const { data: prof } = await supabase.from('profiles').select('*').eq('id', profileUserId).single();
+        setProfile(prof);
       }
     }
+
+    // 3. 💡 フォロー情報の取得 (ここが重要です)
+    // フォロワー数
+    const { count: fers } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', profileUserId);
+
+    // フォロー中数
+    const { count: fings } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', profileUserId);
+
+    setFollowerCount(fers || 0);
+    setFollowingCount(fings || 0);
+
+    // 4. 💡 自分がフォローしているかチェック (DBから真偽値を取得)
+    if (currentUser && !currentIsMe) {
+      const { data: followData } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', profileUserId)
+        .maybeSingle(); // single()だと0件のときエラーになるのでmaybeSingleを使う
+
+      setIsFollowing(!!followData);
+    }
+
     setLoading(false);
   };
 
+
+
+  // フォロー・フォロー解除の実行
+  const toggleFollow = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return alert("ログインが必要です");
+
+    if (isFollowing) {
+      // フォロー解除
+      await supabase.from('follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', profileUserId);
+      setIsFollowing(false);
+      setFollowerCount(prev => prev - 1);
+    } else {
+      // フォロー実行
+      await supabase.from('follows')
+        .insert({ follower_id: user.id, following_id: profileUserId });
+      setIsFollowing(true);
+      setFollowerCount(prev => prev + 1);
+    }
+  };
+
   useEffect(() => {
-    fetchProfileData();
+    fetchAllData();
   }, [profileUserId]);
 
   // 新規アイテム追加（自分の場合のみ）
@@ -76,7 +121,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
     setNewItem('');
     setIsOpen(false);
-    fetchProfileData();
+    fetchAllData();
   };
 
   // 完了保存処理
@@ -112,7 +157,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
       setReflection('');
       setImageFile(null);
       setPreviewUrl(null);
-      fetchProfileData();
+      fetchAllData();
     } catch (error: any) {
       alert(error.message);
     } finally {
@@ -150,7 +195,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
             <h2 className="text-2xl font-light text-white tracking-tight whitespace-nowrap shrink-0">
               {profile?.display_name || 'ユーザー名'}
             </h2>
-            
+
             {/* 💡 自分かどうかで表示を切り替え */}
             {isMe ? (
               <Link
@@ -161,8 +206,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               </Link>
             ) : (
               <div className="flex gap-2">
-                <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1.5 px-6 rounded-lg transition-colors">
-                  Follow
+                <button
+                  onClick={toggleFollow}
+                  className={`py-1.5 px-6 rounded-lg font-bold text-sm transition-all ${isFollowing
+                    ? 'bg-white/10 text-white border border-gray-600 hover:bg-white/20'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    }`}
+                >
+                  {isFollowing ? 'Following' : 'Follow'}
                 </button>
                 <button className="bg-white/20 hover:bg-white/30 text-white text-sm font-bold py-1.5 px-6 rounded-lg transition-colors">
                   Message
@@ -173,8 +224,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
           <div className="flex justify-center md:justify-start gap-6 mb-4 text-gray-300 text-sm">
             <div><span className="font-bold text-white">{items.length}</span> posts</div>
-            <div><span className="font-bold text-white">0</span> followers</div>
-            <div><span className="font-bold text-white">0</span> following</div>
+            <div><span className="font-bold text-white">{followerCount}</span> followers</div>
+            <div><span className="font-bold text-white">{followingCount}</span> following</div>
           </div>
 
           <div className="text-sm">
@@ -196,9 +247,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         {items.map((item) => (
           <div
             key={item.id}
-            className={`p-5 border rounded-3xl shadow-sm transition-all ${
-              item.is_completed ? 'border-green-100 bg-green-50/10' : 'border-gray-800 bg-[#1e1e1e]'
-            }`}
+            className={`p-5 border rounded-3xl shadow-sm transition-all ${item.is_completed ? 'border-green-100 bg-green-50/10' : 'border-gray-800 bg-[#1e1e1e]'
+              }`}
           >
             <div className="flex justify-between items-start mb-2">
               <span className={`text-lg font-medium ${item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
@@ -301,8 +351,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
             <div className="flex gap-2 mt-6">
               <button onClick={() => setIsCompleteModalOpen(false)} className="flex-1 text-gray-400 font-bold" disabled={uploading}>戻る</button>
-              <button 
-                onClick={handleCompleteSave} 
+              <button
+                onClick={handleCompleteSave}
                 disabled={uploading || !imageFile}
                 className={`flex-1 text-white py-3 rounded-xl font-bold ${uploading || !imageFile ? 'bg-gray-300' : 'bg-green-500 shadow-lg shadow-green-100'}`}
               >
