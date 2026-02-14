@@ -106,3 +106,21 @@ with check (auth.uid() = follower_id);
 -- 3. フォローを解除できる
 create policy "Users can unfollow" on follows for delete 
 using (auth.uid() = follower_id);
+
+-- comments テーブルの作成
+create table public.comments (
+  id uuid default gen_random_uuid() primary key,
+  item_id uuid references public.bucket_items(id) on delete cascade not null,
+  user_id uuid references auth.users(id) not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RLS設定
+alter table public.comments enable row level security;
+
+-- 誰でもコメントを読める
+create policy "Anyone can view comments" on comments for select using (true);
+
+-- ログインしていればコメントできる
+create policy "Authenticated users can comment" on comments for insert with check (auth.uid() = user_id);

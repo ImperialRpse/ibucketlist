@@ -11,6 +11,13 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [profile, setProfile] = useState<any>(null);
   const [isMe, setIsMe] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // コメントモーダル用のステート
+  const [selectedCommentItem, setSelectedCommentItem] = useState<any>(null);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState<any[]>([]);
 
   // モーダル・ステート類
   const [isOpen, setIsOpen] = useState(false);
@@ -31,13 +38,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
     // 1. 自分の情報を取得
     const { data: { user: currentUser } } = await supabase.auth.getUser();
+    setCurrentUserId(currentUser?.id ?? null);
     const currentIsMe = currentUser?.id === profileUserId;
     setIsMe(currentIsMe);
 
-    // 2. 投稿とプロフィールを取得
+    // 2. 投稿とプロフィールを取得（ライク・コメント数も含める）
     const { data: bucketData } = await supabase
       .from('bucket_items')
-      .select('*, profiles(display_name, bio)')
+      .select('*, profiles(display_name, bio), likes(user_id), comments(id)')
       .eq('user_id', profileUserId)
       .order('created_at', { ascending: false });
 
@@ -82,6 +90,64 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   };
 
 
+
+  // 特定の投稿のコメントを取得
+  const fetchComments = async (itemId: string) => {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        content,
+        created_at,
+        user_id,
+        profiles ( display_name )
+      `)
+      .eq('item_id', itemId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('コメント取得エラー:', error.message);
+    } else {
+      setComments(data || []);
+    }
+  };
+
+  // コメントを投稿
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !currentUserId || !selectedCommentItem) return;
+
+    const { error } = await supabase
+      .from('comments')
+      .insert({
+        item_id: selectedCommentItem.id,
+        user_id: currentUserId,
+        content: newComment,
+      });
+
+    if (!error) {
+      setNewComment('');
+      fetchComments(selectedCommentItem.id);
+      fetchAllData();
+    }
+  };
+
+  // コメントモーダルを開く
+  const openCommentModal = (item: any) => {
+    setSelectedCommentItem(item);
+    setIsCommentModalOpen(true);
+    fetchComments(item.id);
+  };
+
+  // ライクのトグル
+  const toggleLike = async (itemId: string, isLikedByMe: boolean) => {
+    if (!currentUserId) return alert('ログインが必要です');
+    if (isLikedByMe) {
+      await supabase.from('likes').delete().eq('item_id', itemId).eq('user_id', currentUserId);
+    } else {
+      await supabase.from('likes').insert({ item_id: itemId, user_id: currentUserId });
+    }
+    await fetchAllData();
+  };
 
   // フォロー・フォロー解除の実行
   const toggleFollow = async () => {
@@ -244,48 +310,79 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
       {/* リスト表示 */}
       <div className="space-y-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={`p-5 border rounded-3xl shadow-sm transition-all ${item.is_completed ? 'border-green-100 bg-green-50/10' : 'border-gray-800 bg-[#1e1e1e]'
-              }`}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className={`text-lg font-medium ${item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
-                {item.title}
-              </span>
+        {items.map((item) => {
+          const isLikedByMe = item.likes?.some((like: any) => like.user_id === currentUserId);
+          const likeCount = item.likes?.length || 0;
+          const commentCount = item.comments?.length || 0;
 
-              {/* 💡 自分のプロフィールかつ未完了の時だけチェックボタンを表示 */}
-              {isMe && !item.is_completed && (
-                <button
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setIsCompleteModalOpen(true);
-                  }}
-                  className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50/10 transition-colors"
-                />
-              )}
-              {item.is_completed && <span className="text-green-500 text-xl font-bold">✅</span>}
-            </div>
+          return (
+            <div
+              key={item.id}
+              className={`p-5 border rounded-3xl shadow-sm transition-all ${item.is_completed ? 'border-green-100 bg-green-50/10' : 'border-gray-800 bg-[#1e1e1e]'
+                }`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className={`text-lg font-medium ${item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
+                  {item.title}
+                </span>
 
-            {item.is_completed && (
-              <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                {item.image_url && (
-                  <img
-                    src={item.image_url}
-                    alt="思い出"
-                    className="w-full max-h-96 object-contain rounded-2xl mb-3 shadow-sm bg-black/20"
+                {/* 💡 自分のプロフィールかつ未完了の時だけチェックボタンを表示 */}
+                {isMe && !item.is_completed && (
+                  <button
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setIsCompleteModalOpen(true);
+                    }}
+                    className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50/10 transition-colors"
                   />
                 )}
-                {item.reflection && (
-                  <p className="text-sm text-gray-300 bg-black/20 p-3 rounded-xl italic border border-green-900/30">
-                    "{item.reflection}"
-                  </p>
-                )}
+                {item.is_completed && <span className="text-green-500 text-xl font-bold">✅</span>}
               </div>
-            )}
-          </div>
-        ))}
+
+              {item.is_completed && (
+                <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt="思い出"
+                      className="w-full max-h-96 object-contain rounded-2xl mb-3 shadow-sm bg-black/20"
+                    />
+                  )}
+                  {item.reflection && (
+                    <p className="text-sm text-gray-300 bg-black/20 p-3 rounded-xl italic border border-green-900/30">
+                      "{item.reflection}"
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ライク・コメントボタン */}
+              <div className="flex justify-between items-center border-t border-gray-700 mt-4 pt-4">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleLike(item.id, isLikedByMe)}
+                      className={`text-2xl transition-all active:scale-150 ${isLikedByMe ? 'text-pink-500' : 'text-gray-400 hover:text-gray-300'}`}
+                    >
+                      {isLikedByMe ? '❤️' : '♡'}
+                    </button>
+                    <span className="font-bold text-gray-400 text-sm">{likeCount}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openCommentModal(item)}
+                      className="text-2xl text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      💬
+                    </button>
+                    <span className="font-bold text-gray-400 text-sm">{commentCount}</span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 自分のみ＋ボタンを表示 */}
@@ -358,6 +455,45 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               >
                 {uploading ? '保存中...' : '記録する'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* コメントモーダル */}
+      {isCommentModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in duration-200 text-black">
+            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-700 text-center flex-1">Comments</h3>
+              <button onClick={() => setIsCommentModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
+              {comments.length === 0 ? (
+                <p className="text-center text-gray-400 py-10">最初のコメントを書きましょう！</p>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="flex flex-col border-b border-gray-50 pb-2">
+                    <span className="text-xs font-bold text-blue-600">{c.profiles?.display_name}</span>
+                    <span className="text-sm text-gray-800">{c.content}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 border-t bg-gray-50">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="コメントを入力..."
+                  className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500 text-black"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                />
+                <button onClick={handleAddComment} className="text-blue-500 font-bold px-2">送信</button>
+              </div>
             </div>
           </div>
         </div>
