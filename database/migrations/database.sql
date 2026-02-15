@@ -124,3 +124,40 @@ create policy "Anyone can view comments" on comments for select using (true);
 
 -- ログインしていればコメントできる
 create policy "Authenticated users can comment" on comments for insert with check (auth.uid() = user_id);
+
+-- 既存の外部キー制約を一度削除（もしあれば）
+alter table public.comments drop constraint if exists comments_user_id_fkey;
+
+-- profilesテーブルのidを参照するように制約を再作成
+alter table public.comments 
+add constraint comments_user_id_fkey 
+foreign key (user_id) 
+references public.profiles(id) 
+on delete cascade;
+
+-- profile画像用のコラムを追加
+alter table public.profiles add column if not exists avatar_url text;
+
+-- 1. 誰でも画像を見ることができるようにする（公開設定）
+CREATE POLICY "Avatar images are publicly accessible"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'avatars' );
+
+-- 2. ログイン利用者は画像をアップロードできる
+CREATE POLICY "Anyone can upload an avatar"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'avatars' 
+  AND auth.role() = 'authenticated'
+);
+
+-- 3. 自分の画像のみ更新・削除できるようにする（オプション）
+CREATE POLICY "Users can update their own avatar"
+ON storage.objects FOR UPDATE
+USING ( auth.uid() = owner )
+WITH CHECK ( bucket_id = 'avatars' );
+
+-- 自分のプロフィールを更新できるポリシー（すでにある場合は不要）
+CREATE POLICY "Users can update own profile"
+ON public.profiles FOR UPDATE
+USING ( auth.uid() = id );

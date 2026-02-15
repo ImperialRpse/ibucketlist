@@ -28,7 +28,7 @@ export default function TimelinePage() {
       .from('bucket_items')
       .select(`
         *,
-        profiles ( display_name ),
+        profiles ( display_name, avatar_url ),
         likes ( user_id ),
         comments ( id ) 
       `)
@@ -51,7 +51,8 @@ export default function TimelinePage() {
         created_at,
         user_id,
         profiles (
-          display_name
+          display_name,
+          avatar_url
         )
       `) // 💡 profiles(display_name) が正しく取得できているか確認
       .eq('item_id', itemId)
@@ -114,8 +115,17 @@ export default function TimelinePage() {
 
           return (
             <div key={item.id} className="p-6 border rounded-2xl shadow-sm bg-white text-black border-gray-200">
-              <Link href={`/profile/${item.user_id}`}>
-                <p className="text-sm font-bold text-blue-600 mb-1 hover:underline cursor-pointer">
+              <Link href={`/profile/${item.user_id}`} className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                  {item.profiles?.avatar_url ? (
+                    <img src={item.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-gray-500 font-bold text-sm">
+                      {item.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-bold text-blue-600 hover:underline cursor-pointer">
                   {item.profiles?.display_name || '名無しのユーザー'}
                 </p>
               </Link>
@@ -173,13 +183,36 @@ export default function TimelinePage() {
                 <p className="text-center text-gray-400 py-10">最初のコメントを書きましょう！</p>
               ) : (
                 comments.map((c) => (
-                  <div key={c.id} className="flex flex-col border-b border-gray-50 pb-2">
-                    <span className="text-xs font-bold text-blue-600">{c.profiles?.display_name}</span>
-                    <span className="text-sm text-gray-800">{c.content}</span>
+                  <div key={c.id} className="flex gap-3 border-b border-gray-50 pb-3 items-start">
+                    {/* 💡 アイコンからプロフィールへ遷移 */}
+                    <Link href={`/profile/${c.user_id}`} onClick={() => setIsCommentModalOpen(false)}>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                        {c.profiles?.avatar_url ? (
+                          <img src={c.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-200">
+                            {c.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+
+                    <div className="flex flex-col flex-1">
+                      {/* 💡 名前からプロフィールへ遷移 */}
+                      <Link
+                        href={`/profile/${c.user_id}`}
+                        onClick={() => setIsCommentModalOpen(false)}
+                        className="text-xs font-bold text-blue-600 hover:underline inline-block w-fit"
+                      >
+                        {c.profiles?.display_name || 'ユーザー名'}
+                      </Link>
+                      <span className="text-sm text-gray-800 leading-relaxed mt-0.5">{c.content}</span>
+                    </div>
                   </div>
                 ))
               )}
             </div>
+ 
 
             {/* 入力エリア */}
             <div className="p-4 border-t bg-gray-50">

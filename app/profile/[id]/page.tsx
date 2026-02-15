@@ -45,7 +45,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     // 2. 投稿とプロフィールを取得（ライク・コメント数も含める）
     const { data: bucketData } = await supabase
       .from('bucket_items')
-      .select('*, profiles(display_name, bio), likes(user_id), comments(id)')
+      .select('*, profiles(display_name, bio, avatar_url), likes(user_id), comments(id)')
       .eq('user_id', profileUserId)
       .order('created_at', { ascending: false });
 
@@ -100,7 +100,10 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         content,
         created_at,
         user_id,
-        profiles ( display_name )
+        profiles ( 
+          display_name,
+          avatar_url 
+        )
       `)
       .eq('item_id', itemId)
       .order('created_at', { ascending: true });
@@ -111,6 +114,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
       setComments(data || []);
     }
   };
+
 
   // コメントを投稿
   const handleAddComment = async () => {
@@ -248,9 +252,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         <div className="relative">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600">
             <div className="w-full h-full rounded-full border-4 border-[#121212] overflow-hidden bg-gray-200 flex items-center justify-center">
-              <span className="text-3xl md:text-5xl font-bold text-gray-500">
-                {profile?.display_name?.[0]?.toUpperCase() || 'U'}
-              </span>
+              {/* 💡 avatar_url があれば表示、なければ名前の頭文字を表示 */}
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl md:text-5xl font-bold text-gray-500">
+                  {profile?.display_name?.[0]?.toUpperCase() || 'U'}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -321,6 +330,25 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               className={`p-5 border rounded-3xl shadow-sm transition-all ${item.is_completed ? 'border-green-100 bg-green-50/10' : 'border-gray-800 bg-[#1e1e1e]'
                 }`}
             >
+              {/* 💡 追加: 投稿者情報エリア (Avatar + Name) */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex-shrink-0 border border-gray-600">
+                  {item.profiles?.avatar_url ? (
+                    <img src={item.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400">
+                      {item.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-gray-200">
+                  {item.profiles?.display_name || 'ユーザー名'}
+                </span>
+              </div>
+
+
+
+
               <div className="flex justify-between items-start mb-2">
                 <span className={`text-lg font-medium ${item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
                   {item.title}
@@ -461,6 +489,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* コメントモーダル */}
+
+      {/* コメントモーダル */}
       {isCommentModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in duration-200 text-black">
@@ -474,9 +504,31 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 <p className="text-center text-gray-400 py-10">最初のコメントを書きましょう！</p>
               ) : (
                 comments.map((c) => (
-                  <div key={c.id} className="flex flex-col border-b border-gray-50 pb-2">
-                    <span className="text-xs font-bold text-blue-600">{c.profiles?.display_name}</span>
-                    <span className="text-sm text-gray-800">{c.content}</span>
+                  <div key={c.id} className="flex gap-3 border-b border-gray-50 pb-3 items-start">
+                    {/* 💡 アイコンからプロフィールへ遷移 */}
+                    <Link href={`/profile/${c.user_id}`} onClick={() => setIsCommentModalOpen(false)}>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                        {c.profiles?.avatar_url ? (
+                          <img src={c.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-200">
+                            {c.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+
+                    <div className="flex flex-col flex-1">
+                      {/* 💡 名前からプロフィールへ遷移 */}
+                      <Link
+                        href={`/profile/${c.user_id}`}
+                        onClick={() => setIsCommentModalOpen(false)}
+                        className="text-xs font-bold text-blue-600 hover:underline inline-block w-fit"
+                      >
+                        {c.profiles?.display_name || 'ユーザー名'}
+                      </Link>
+                      <span className="text-sm text-gray-800 leading-relaxed mt-0.5">{c.content}</span>
+                    </div>
                   </div>
                 ))
               )}
@@ -498,6 +550,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       )}
+
     </div>
   );
 }
