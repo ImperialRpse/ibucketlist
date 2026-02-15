@@ -161,3 +161,86 @@ WITH CHECK ( bucket_id = 'avatars' );
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
 USING ( auth.uid() = id );
+
+-- ==========================================
+-- 1. テーブルの作成 (リセット用 CASCADE 付き)
+-- ==========================================
+DROP TABLE IF EXISTS public.dm_messages CASCADE;
+DROP TABLE IF EXISTS public.dm_participants CASCADE;
+DROP TABLE IF EXISTS public.dm_rooms CASCADE;
+
+-- 部屋テーブル
+CREATE TABLE public.dm_rooms (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- 参加者管理テーブル
+CREATE TABLE public.dm_participants (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  room_id uuid REFERENCES public.dm_rooms(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  UNIQUE(room_id, user_id)
+);
+
+-- メッセージテーブル
+CREATE TABLE public.dm_messages (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  room_id uuid REFERENCES public.dm_rooms(id) ON DELETE CASCADE,
+  sender_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  read_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ==========================================
+-- 2. RLS (Row Level Security) の有効化
+-- ==========================================
+ALTER TABLE public.dm_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dm_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dm_messages ENABLE ROW LEVEL SECURITY;
+
+-- ==========================================
+-- 3. dm_rooms のポリシー (作成と参照)
+-- ==========================================
+-- 【作成】認証済みユーザーなら誰でも作成可能 (WITH CHECK true で作成直後の制限を回避)
+CREATE POLICY "dm_rooms_insert" 
+ON public.dm_rooms FOR INSERT 
+WITH CHECK (auth.role() = 'authenticated');
+
+-- 【参照】ログインしていれば一旦全表示 (後の participants 取得でフィルタリング)
+CREATE POLICY "dm_rooms_select" 
+ON public.dm_rooms FOR SELECT 
+USING (auth.role() = 'authenticated');
+
+-- ==========================================
+-- 4. dm_participants のポリシー (無限再帰を回避)
+-- ==========================================
+-- 【作成】認証済みユーザーなら誰でも追加可能
+CREATE POLICY "dm_participants_insert" 
+ON public.dm_participants FOR INSERT 
+WITH CHECK (auth.role() = 'authenticated');
+
+-- 【参照】無限再帰を防ぐため、単純な true または auth.uid() ベースのチェック
+CREATE POLICY "dm_participants_select" 
+ON public.dm_participants FOR SELECT 
+USING (auth.role() = 'authenticated');
+
+-- ==========================================
+-- 5. dm_messages のポリシー (メッセージの読み書き)
+-- ==========================================
+-- 【作成】送信者本人のみ、かつ認証済みであること
+CREATE POLICY "dm_messages_insert" 
+ON public.dm_messages FOR INSERT 
+WITH CHECK (auth.uid() = sender_id);
+
+-- 【参照】自分が参加している部屋のメッセージのみ
+CREATE POLICY "dm_messages_select" 
+ON public.dm_messages FOR SELECT 
+USING (
+  EXISTS (
+    SELECT 1 FROM public.dm_participants 
+    WHERE dm_participants.room_id = dm_messages.room_id 
+    AND dm_participants.user_id = auth.uid()
+  )
+);

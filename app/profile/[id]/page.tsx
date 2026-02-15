@@ -2,6 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // 💡 追加
 
 export default function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   // URLパラメータ（[id]）を取得
@@ -31,6 +32,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+
+  const router = useRouter();
 
   // 💡 データの統合取得関数
   const fetchAllData = async () => {
@@ -242,6 +245,74 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     setPreviewUrl(URL.createObjectURL(file));
   };
 
+  //DIRECT MESSAGE
+  const handleStartMessage = async () => {
+    const { data: { user: me } } = await supabase.auth.getUser();
+    if (!me) return alert("ログインが必要です");
+    if (me.id === profileUserId) return; // 自分には送れない
+
+    setLoading(true);
+
+    try {
+      // 1. 自分の参加している全ルームIDを取得
+      const { data: myParticipants } = await supabase
+        .from('dm_participants')
+        .select('room_id')
+        .eq('user_id', me.id);
+    
+      const myRoomIds = myParticipants?.map(p => p.room_id) || [];
+    
+      let roomId = null;
+    
+      if (myRoomIds.length > 0) {
+        // 2. それらのルームの中に、相手(profileUserId)も参加しているものがあるかチェック
+        const { data: commonParticipant } = await supabase
+          .from('dm_participants')
+          .select('room_id')
+          .in('room_id', myRoomIds)
+          .eq('user_id', profileUserId)
+          .maybeSingle();
+        
+        if (commonParticipant) {
+          roomId = commonParticipant.room_id;
+        }
+      }
+    
+      if (roomId) {
+        router.push(`/messages/${roomId}`);
+      } else {
+        // 3. なければ新規作成
+        const { data: newRoom, error: roomError } = await supabase
+          .from('dm_rooms')
+          .insert({})
+          .select()
+          .single();
+    
+        if (roomError) throw roomError;
+    
+        // 4. 自分と相手を登録
+        const { error: partError } = await supabase
+          .from('dm_participants')
+          .insert([
+            { room_id: newRoom.id, user_id: me.id },
+            { room_id: newRoom.id, user_id: profileUserId }
+          ]);
+    
+        if (partError) throw partError;
+    
+        router.push(`/messages/${newRoom.id}`);
+      }
+    } catch (error) {
+      console.error("詳細エラー:", JSON.stringify(error, null, 2), error);
+      alert("メッセージルームの作成に失敗しました");
+    } finally {
+      setLoading(false);
+    }
+
+  };
+
+
+  //なぜ　この部分が実行されているときしたのreturn部分が表示されないの？
   if (loading) return <div className="p-10 text-center text-white">Loading...</div>;
 
   return (
@@ -290,9 +361,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 >
                   {isFollowing ? 'Following' : 'Follow'}
                 </button>
-                <button className="bg-white/20 hover:bg-white/30 text-white text-sm font-bold py-1.5 px-6 rounded-lg transition-colors">
-                  Message
+                <button
+                  onClick={handleStartMessage}
+                  disabled={loading}
+                  className="bg-white/20 hover:bg-white/30 text-white text-sm font-bold py-1.5 px-6 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Connecting...' : 'Message'}
                 </button>
+
               </div>
             )}
           </div>
