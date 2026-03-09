@@ -5,169 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { insertNotification } from '@/lib/notifications';
 
-// ── 型定義 ────────────────────────────────────────────────
-type Comment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  parent_id: string | null;
-  profiles: {
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null;
-  replies?: Comment[];
-};
-
-type CommentItemProps = {
-  comment: Comment;
-  depth?: number;
-  currentUserId: string | null;
-  replyingTo: Comment | null;
-  setReplyingTo: (comment: Comment | null) => void;
-  replyText: string;
-  setReplyText: (text: string) => void;
-  handleAddReply: () => void;
-  expandedReplies: Set<string>;
-  toggleReplies: (id: string) => void;
-  setIsCommentModalOpen: (open: boolean) => void;
-};
-
-// ── CommentItem コンポーネント ─────────────────────────────
-const CommentItem = ({
-  comment,
-  depth = 0,
-  currentUserId,
-  replyingTo,
-  setReplyingTo,
-  replyText,
-  setReplyText,
-  handleAddReply,
-  expandedReplies,
-  toggleReplies,
-  setIsCommentModalOpen,
-}: CommentItemProps) => {
-  const hasReplies = (comment.replies?.length ?? 0) > 0;
-  const isExpanded = expandedReplies.has(comment.id);
-  const isTargetOfReplyInput = replyingTo?.id === comment.id;
-
-  return (
-    <div className={`${depth > 0 ? 'ml-8 border-l-2 border-blue-100 pl-3' : ''}`}>
-      <div className="flex gap-3 py-3 items-start">
-        {/* アバター */}
-        <Link href={`/profile/${comment.user_id}`} onClick={() => setIsCommentModalOpen(false)}>
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
-            {comment.profiles?.avatar_url ? (
-              <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-200">
-                {comment.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
-              </div>
-            )}
-          </div>
-        </Link>
-
-        <div className="flex flex-col flex-1 min-w-0">
-          {/* 名前 */}
-          <Link
-            href={`/profile/${comment.user_id}`}
-            onClick={() => setIsCommentModalOpen(false)}
-            className="text-xs font-bold text-blue-600 hover:underline inline-block w-fit"
-          >
-            {comment.profiles?.display_name || 'ユーザー名'}
-          </Link>
-
-          {/* コメント本文 */}
-          <span className="text-sm text-gray-800 leading-relaxed mt-0.5 break-words">
-            {comment.content}
-          </span>
-
-          {/* アクション行 */}
-          <div className="flex items-center gap-3 mt-1">
-            {/* 返信ボタン */}
-            {currentUserId && (
-              <button
-                onClick={() => {
-                  if (isTargetOfReplyInput) {
-                    setReplyingTo(null);
-                    setReplyText('');
-                  } else {
-                    setReplyingTo(comment);
-                    setReplyText('');
-                  }
-                }}
-                className={`text-xs font-semibold transition-colors ${isTargetOfReplyInput
-                  ? 'text-blue-500'
-                  : 'text-gray-400 hover:text-blue-500'
-                  }`}
-              >
-                {isTargetOfReplyInput ? 'キャンセル' : '返信'}
-              </button>
-            )}
-
-            {/* 返信件数の展開/折りたたみ */}
-            {hasReplies && (
-              <button
-                onClick={() => toggleReplies(comment.id)}
-                className="text-xs text-blue-400 hover:text-blue-600 font-semibold transition-colors"
-              >
-                {isExpanded
-                  ? '▲ 返信を隠す'
-                  : `▼ 返信 ${comment.replies!.length}件を表示`}
-              </button>
-            )}
-          </div>
-
-          {/* 返信の入力フォーム */}
-          {isTargetOfReplyInput && (
-            <div className="mt-2 flex gap-2 items-center">
-              <input
-                type="text"
-                placeholder={`${comment.profiles?.display_name || 'ユーザー'}への返信...`}
-                className="flex-1 border border-blue-200 rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 text-black bg-blue-50"
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddReply()
-                }
-                autoFocus
-              />
-              <button
-                onClick={handleAddReply}
-                className="text-blue-500 font-bold text-sm px-2 hover:text-blue-700 transition-colors"
-              >
-                送信
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 返信リスト（展開時のみ） */}
-      {hasReplies && isExpanded && (
-        <div>
-          {comment.replies!.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              depth={depth + 1}
-              currentUserId={currentUserId}
-              replyingTo={replyingTo}
-              setReplyingTo={setReplyingTo}
-              replyText={replyText}
-              setReplyText={setReplyText}
-              handleAddReply={handleAddReply}
-              expandedReplies={expandedReplies}
-              toggleReplies={toggleReplies}
-              setIsCommentModalOpen={setIsCommentModalOpen}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 // ── ページ本体 ─────────────────────────────────────────────
 export default function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
   // URLパラメータ（[id]）を取得
@@ -179,16 +16,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // コメントモーダル用のステート
-  const [selectedCommentItem, setSelectedCommentItem] = useState<any>(null);
-  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<Comment[]>([]);
 
-  // 返信機能用のステート
-  const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
 
   // モーダル・ステート類
   const [isOpen, setIsOpen] = useState(false);
@@ -265,117 +93,11 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
 
 
-  // フラットなコメント配列をツリー構造に変換
-  const buildCommentTree = (flatComments: Comment[]): Comment[] => {
-    const map: Record<string, Comment> = {};
-    const roots: Comment[] = [];
-    flatComments.forEach((c) => { map[c.id] = { ...c, replies: [] }; });
-    flatComments.forEach((c) => {
-      if (c.parent_id && map[c.parent_id]) {
-        map[c.parent_id].replies!.push(map[c.id]);
-      } else {
-        roots.push(map[c.id]);
-      }
-    });
-    return roots;
-  };
 
-  // 特定の投稿のコメントを取得（返信も含む）
-  const fetchComments = async (itemId: string) => {
-    const { data, error } = await supabase
-      .from('comments')
-      .select(`
-        id,
-        content,
-        created_at,
-        user_id,
-        parent_id,
-        profiles (
-          display_name,
-          avatar_url
-        )
-      `)
-      .eq('item_id', itemId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('コメント取得エラー:', error.message);
-    } else {
-      const normalized: Comment[] = (data || []).map((row) => ({
-        ...row,
-        profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : row.profiles,
-      }));
-      setComments(buildCommentTree(normalized));
-    }
-  };
-
-
-  // トップレベルコメントを投稿
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !currentUserId || !selectedCommentItem) return;
-
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        item_id: selectedCommentItem.id,
-        user_id: currentUserId,
-        content: newComment,
-        parent_id: null,
-      });
-
-    if (!error) {
-      // 投稿者に「コメント」通知
-      await insertNotification(selectedCommentItem.user_id, currentUserId, 'comment', selectedCommentItem.id);
-      setNewComment('');
-      fetchComments(selectedCommentItem.id);
-      fetchAllData();
-    }
-  };
-
-  // 返信コメントを投稿
-  const handleAddReply = async () => {
-    if (!replyText.trim() || !currentUserId || !selectedCommentItem || !replyingTo) return;
-
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        item_id: selectedCommentItem.id,
-        user_id: currentUserId,
-        content: replyText,
-        parent_id: replyingTo.id,
-      });
-
-    if (!error) {
-      // 返信されたコメント投稿者に「返信」通知
-      await insertNotification(replyingTo.user_id, currentUserId, 'reply', selectedCommentItem.id);
-      setReplyText('');
-      setReplyingTo(null);
-      setExpandedReplies((prev) => new Set([...prev, replyingTo.id]));
-      fetchComments(selectedCommentItem.id);
-    }
-  };
-
-  // コメントモーダルを開く
-  const openCommentModal = (item: any) => {
-    setSelectedCommentItem(item);
-    setIsCommentModalOpen(true);
-    setReplyingTo(null);
-    setReplyText('');
-    setExpandedReplies(new Set());
-    fetchComments(item.id);
-  };
-
-  // 返信の展開・折りたたみ
-  const toggleReplies = (commentId: string) => {
-    setExpandedReplies((prev) => {
-      const next = new Set(prev);
-      if (next.has(commentId)) { next.delete(commentId); } else { next.add(commentId); }
-      return next;
-    });
-  };
 
   // ライクのトグル
-  const toggleLike = async (itemId: string, isLikedByMe: boolean) => {
+  const toggleLike = async (e: React.MouseEvent, itemId: string, isLikedByMe: boolean) => {
+    e.stopPropagation();
     if (!currentUserId) return alert('ログインが必要です');
     if (isLikedByMe) {
       await supabase.from('likes').delete().eq('item_id', itemId).eq('user_id', currentUserId);
@@ -637,7 +359,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
           return (
             <div
               key={item.id}
-              className={`p-5 border rounded-3xl shadow-sm transition-all ${item.is_completed ? 'border-green-100 bg-green-50/10' : 'border-gray-800 bg-[#1e1e1e]'
+              onClick={() => router.push(`/item/${item.id}`)}
+              className={`p-5 border rounded-3xl shadow-sm cursor-pointer hover:bg-gray-800 transition-all ${item.is_completed ? 'border-green-100 bg-green-50/10 hover:bg-green-50/20' : 'border-gray-800 bg-[#1e1e1e]'
                 }`}
             >
               {/* 💡 追加: 投稿者情報エリア (Avatar + Name) */}
@@ -667,7 +390,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 {/* 💡 自分のプロフィールかつ未完了の時だけチェックボタンを表示 */}
                 {isMe && !item.is_completed && (
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedItem(item);
                       setIsCompleteModalOpen(true);
                     }}
@@ -705,7 +429,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => toggleLike(item.id, isLikedByMe)}
+                      onClick={(e) => toggleLike(e, item.id, isLikedByMe)}
                       className={`text-2xl transition-all active:scale-150 ${isLikedByMe ? 'text-pink-500' : 'text-gray-400 hover:text-gray-300'}`}
                     >
                       {isLikedByMe ? '❤️' : '♡'}
@@ -714,7 +438,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => openCommentModal(item)}
                       className="text-2xl text-gray-400 hover:text-gray-300 transition-colors"
                     >
                       💬
@@ -806,67 +529,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               >
                 {uploading ? '保存中...' : '記録する'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* コメントモーダル */}
-      {isCommentModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in duration-200 text-black">
-            {/* ヘッダー */}
-            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-700 text-center flex-1">Comments</h3>
-              <button
-                onClick={() => {
-                  setIsCommentModalOpen(false);
-                  setReplyingTo(null);
-                  setReplyText('');
-                }}
-                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* コメント一覧 */}
-            <div className="flex-1 overflow-y-auto px-4 bg-white divide-y divide-gray-50">
-              {comments.length === 0 ? (
-                <p className="text-center text-gray-400 py-10">最初のコメントを書きましょう！</p>
-              ) : (
-                comments.map((c) => (
-                  <CommentItem
-                    key={c.id}
-                    comment={c}
-                    depth={0}
-                    currentUserId={currentUserId}
-                    replyingTo={replyingTo}
-                    setReplyingTo={setReplyingTo}
-                    replyText={replyText}
-                    setReplyText={setReplyText}
-                    handleAddReply={handleAddReply}
-                    expandedReplies={expandedReplies}
-                    toggleReplies={toggleReplies}
-                    setIsCommentModalOpen={setIsCommentModalOpen}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* 新規コメント入力エリア */}
-            <div className="p-4 border-t bg-gray-50">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="コメントを入力..."
-                  className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500 text-black"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddComment()}
-                />
-                <button onClick={handleAddComment} className="text-blue-500 font-bold px-2">送信</button>
-              </div>
             </div>
           </div>
         </div>
