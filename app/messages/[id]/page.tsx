@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { insertNotification } from '@/lib/notifications';
 
 export default function ChatRoomPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: roomId } = use(params);
@@ -98,6 +99,10 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       .insert({ room_id: roomId, sender_id: myId, content });
 
     if (error) return;
+    // 相手に「DM」通知
+    if (partner?.id) {
+      await insertNotification(partner.id, myId, 'dm');
+    }
     markRead();
   };
 

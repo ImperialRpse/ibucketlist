@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+//別ファイルに定義した関数をimport
+import { insertNotification } from '@/lib/notifications';
 
 // コメントの型定義（ネストした返信を含む）手紙そのもの（中身）
 type Comment = {
@@ -288,6 +290,8 @@ export default function TimelinePage() {
       });
 
     if (!error) {
+      // 投稿者に「コメント」通知
+      await insertNotification(selectedItem.user_id, currentUserId, 'comment', selectedItem.id);
       setNewComment('');
       fetchComments(selectedItem.id);
       fetchAllItems();
@@ -308,9 +312,10 @@ export default function TimelinePage() {
       });
 
     if (!error) {
+      // 返信されたコメント投稿者に「返信」通知
+      await insertNotification(replyingTo.user_id, currentUserId, 'reply', selectedItem.id);
       setReplyText('');
       setReplyingTo(null);
-      // 返信したコメントの返信欄を展開状態にする(setに追加)
       setExpandedReplies((prev) => new Set([...prev, replyingTo.id]));
       fetchComments(selectedItem.id);
     }
@@ -345,6 +350,9 @@ export default function TimelinePage() {
       await supabase.from('likes').delete().eq('item_id', itemId).eq('user_id', currentUserId);
     } else {
       await supabase.from('likes').insert({ item_id: itemId, user_id: currentUserId });
+      // 投稿者に「いいね」通知
+      const item = items.find((i) => i.id === itemId);
+      if (item) await insertNotification(item.user_id, currentUserId, 'like', itemId);
     }
     await fetchAllItems();
   };
