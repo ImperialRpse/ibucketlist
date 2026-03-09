@@ -386,7 +386,11 @@ export default function TimelinePage() {
                   {item.profiles?.display_name || '名無しのユーザー'}
                 </p>
               </Link>
-              <p className="text-lg font-semibold mb-4 text-gray-800">{item.title}</p>
+              <p className={`text-lg font-semibold ${item.description ? 'mb-2' : 'mb-4'} text-gray-800`}>{item.title}</p>
+
+              {item.description && (
+                <p className="text-sm text-gray-600 mb-4 whitespace-pre-wrap">{item.description}</p>
+              )}
 
               {item.is_completed && (
                 <div className="mb-4 space-y-3">

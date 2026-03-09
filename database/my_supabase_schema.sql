@@ -88,7 +88,8 @@ CREATE TABLE IF NOT EXISTS "public"."bucket_items" (
     "is_completed" boolean DEFAULT false,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
     "image_url" "text",
-    "reflection" "text"
+    "reflection" "text",
+    "description" "text"
 );
 
 

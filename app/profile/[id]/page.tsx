@@ -194,6 +194,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   const [isOpen, setIsOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [newItem, setNewItem] = useState('');
+  const [newItemDescription, setNewItemDescription] = useState('');
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [reflection, setReflection] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -415,17 +416,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     fetchAllData();
   }, [profileUserId]);
 
-  // 新規アイテム追加（自分の場合のみ）
   const addItem = async () => {
     if (!isMe || !newItem) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     await supabase.from('bucket_items').insert([
-      { title: newItem, user_id: user.id }
+      { title: newItem, description: newItemDescription, user_id: user.id }
     ]);
 
     setNewItem('');
+    setNewItemDescription('');
     setIsOpen(false);
     fetchAllData();
   };
@@ -676,6 +677,12 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 {item.is_completed && <span className="text-green-500 text-xl font-bold">✅</span>}
               </div>
 
+              {item.description && (
+                <p className="text-sm text-gray-400 mb-3 whitespace-pre-wrap">
+                  {item.description}
+                </p>
+              )}
+
               {item.is_completed && (
                 <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-500">
                   {item.image_url && (
@@ -744,6 +751,13 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               onChange={(e) => setNewItem(e.target.value)}
               placeholder="例：スカイダイビングをする"
               autoFocus
+            />
+            <textarea
+              className="w-full border-2 p-3 rounded-xl mb-4 bg-gray-50 focus:border-blue-500 outline-none resize-none"
+              value={newItemDescription}
+              onChange={(e) => setNewItemDescription(e.target.value)}
+              placeholder="詳細（任意）"
+              rows={3}
             />
             <div className="flex gap-2">
               <button onClick={() => setIsOpen(false)} className="flex-1 text-gray-500 py-2">キャンセル</button>
