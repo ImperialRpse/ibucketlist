@@ -1,302 +1,36 @@
 'use client';
-import { use, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { insertNotification } from '@/lib/notifications';
-
-type Comment = {
-    id: string;
-    content: string;
-    created_at: string;
-    user_id: string;
-    parent_id: string | null;
-    profiles: {
-        display_name: string | null;
-        avatar_url: string | null;
-    } | null;
-    replies?: Comment[];
-};
-
-type CommentItemProps = {
-    comment: Comment;
-    depth?: number;
-    currentUserId: string | null;
-    replyingTo: Comment | null;
-    setReplyingTo: (comment: Comment | null) => void;
-    replyText: string;
-    setReplyText: (text: string) => void;
-    handleAddReply: () => void;
-    expandedReplies: Set<string>;
-    toggleReplies: (id: string) => void;
-};
-
-const CommentItem = ({
-    comment,
-    depth = 0,
-    currentUserId,
-    replyingTo,
-    setReplyingTo,
-    replyText,
-    setReplyText,
-    handleAddReply,
-    expandedReplies,
-    toggleReplies,
-}: CommentItemProps) => {
-    const hasReplies = (comment.replies?.length ?? 0) > 0;
-    const isExpanded = expandedReplies.has(comment.id);
-    const isTargetOfReplyInput = replyingTo?.id === comment.id;
-
-    return (
-        <div className={`${depth > 0 ? 'ml-8 border-l-2 border-blue-100 pl-3' : ''}`}>
-            <div className="flex gap-3 py-3 items-start">
-                <Link href={`/profile/${comment.user_id}`}>
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
-                        {comment.profiles?.avatar_url ? (
-                            <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-200">
-                                {comment.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                        )}
-                    </div>
-                </Link>
-
-                <div className="flex flex-col flex-1 min-w-0">
-                    <Link
-                        href={`/profile/${comment.user_id}`}
-                        className="text-xs font-bold text-blue-600 hover:underline inline-block w-fit"
-                    >
-                        {comment.profiles?.display_name || 'ユーザー名'}
-                    </Link>
-
-                    <span className="text-sm text-gray-800 leading-relaxed mt-0.5 break-words">
-                        {comment.content}
-                    </span>
-
-                    <div className="flex items-center gap-3 mt-1">
-                        {currentUserId && (
-                            <button
-                                onClick={() => {
-                                    if (isTargetOfReplyInput) {
-                                        setReplyingTo(null);
-                                        setReplyText('');
-                                    } else {
-                                        setReplyingTo(comment);
-                                        setReplyText('');
-                                    }
-                                }}
-                                className={`text-xs font-semibold transition-colors ${isTargetOfReplyInput ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'}`}
-                            >
-                                {isTargetOfReplyInput ? 'キャンセル' : '返信'}
-                            </button>
-                        )}
-
-                        {hasReplies && (
-                            <button
-                                onClick={() => toggleReplies(comment.id)}
-                                className="text-xs text-blue-400 hover:text-blue-600 font-semibold transition-colors"
-                            >
-                                {isExpanded ? '▲ 返信を隠す' : `▼ 返信 ${comment.replies!.length}件を表示`}
-                            </button>
-                        )}
-                    </div>
-
-                    {isTargetOfReplyInput && (
-                        <div className="mt-2 flex gap-2 items-center">
-                            <input
-                                type="text"
-                                placeholder={`${comment.profiles?.display_name || 'ユーザー'}への返信...`}
-                                className="flex-1 border border-blue-200 rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 text-black bg-blue-50"
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddReply()}
-                                autoFocus
-                            />
-                            <button
-                                onClick={handleAddReply}
-                                className="text-blue-500 font-bold text-sm px-2 hover:text-blue-700 transition-colors"
-                            >
-                                送信
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {hasReplies && isExpanded && (
-                <div>
-                    {comment.replies!.map((reply) => (
-                        <CommentItem
-                            key={reply.id}
-                            comment={reply}
-                            depth={depth + 1}
-                            currentUserId={currentUserId}
-                            replyingTo={replyingTo}
-                            setReplyingTo={setReplyingTo}
-                            replyText={replyText}
-                            setReplyText={setReplyText}
-                            handleAddReply={handleAddReply}
-                            expandedReplies={expandedReplies}
-                            toggleReplies={toggleReplies}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
+import { CommentItem } from '@/components/CommentItem';
+import { useItemDetail } from '@/hooks/useItemDetail';
 
 export default function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id: itemId } = use(params);
     const router = useRouter();
 
-    const [item, setItem] = useState<any>(null);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    const [newComment, setNewComment] = useState('');
-    const [comments, setComments] = useState<Comment[]>([]);
-
-    const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
-    const [replyText, setReplyText] = useState('');
-    const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
-
-    useEffect(() => {
-        const init = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) setCurrentUserId(user.id);
-            await fetchItemData();
-            await fetchComments(itemId);
-        };
-        init();
-    }, [itemId]);
-
-    const fetchItemData = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('bucket_items')
-            .select(`
-        *,
-        profiles ( display_name, avatar_url ),
-        likes ( user_id ),
-        comments ( id ) 
-      `)
-            .eq('id', itemId)
-            .single();
-
-        if (error) {
-            console.error("Fetch Error:", error.message);
-        } else if (data) {
-            setItem(data);
-        }
-        setLoading(false);
-    };
-
-    const buildCommentTree = (flatComments: Comment[]): Comment[] => {
-        const map: Record<string, Comment> = {};
-        const roots: Comment[] = [];
-
-        flatComments.forEach((c) => { map[c.id] = { ...c, replies: [] }; });
-        flatComments.forEach((c) => {
-            if (c.parent_id && map[c.parent_id]) {
-                map[c.parent_id].replies!.push(map[c.id]);
-            } else {
-                roots.push(map[c.id]);
-            }
-        });
-
-        return roots;
-    };
-
-    const fetchComments = async (targetItemId: string) => {
-        const { data, error } = await supabase
-            .from('comments')
-            .select(`
-        id, content, created_at, user_id, parent_id,
-        profiles ( display_name, avatar_url )
-      `)
-            .eq('item_id', targetItemId)
-            .order('created_at', { ascending: true });
-
-        if (error) {
-            console.error("コメント取得エラー:", error.message);
-        } else {
-            const normalized: Comment[] = (data || []).map((row) => ({
-                ...row,
-                profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : row.profiles,
-            }));
-            setComments(buildCommentTree(normalized));
-        }
-    };
-
-    const handleAddComment = async () => {
-        if (!newComment.trim() || !currentUserId || !item) return;
-
-        const { error } = await supabase
-            .from('comments')
-            .insert({
-                item_id: item.id,
-                user_id: currentUserId,
-                content: newComment,
-                parent_id: null,
-            });
-
-        if (!error) {
-            await insertNotification(item.user_id, currentUserId, 'comment', item.id);
-            setNewComment('');
-            fetchComments(item.id);
-            fetchItemData();
-        }
-    };
-
-    const handleAddReply = async () => {
-        if (!replyText.trim() || !currentUserId || !item || !replyingTo) return;
-
-        const { error } = await supabase
-            .from('comments')
-            .insert({
-                item_id: item.id,
-                user_id: currentUserId,
-                content: replyText,
-                parent_id: replyingTo.id,
-            });
-
-        if (!error) {
-            await insertNotification(replyingTo.user_id, currentUserId, 'reply', item.id);
-            setReplyText('');
-            setReplyingTo(null);
-            setExpandedReplies((prev) => new Set([...prev, replyingTo.id]));
-            fetchComments(item.id);
-        }
-    };
-
-    const toggleReplies = (commentId: string) => {
-        setExpandedReplies((prev) => {
-            const next = new Set(prev);
-            if (next.has(commentId)) next.delete(commentId);
-            else next.add(commentId);
-            return next;
-        });
-    };
-
-    const toggleLike = async () => {
-        if (!currentUserId || !item) return alert("ログインが必要です");
-        const isLikedByMe = item.likes?.some((like: any) => like.user_id === currentUserId);
-
-        if (isLikedByMe) {
-            await supabase.from('likes').delete().eq('item_id', item.id).eq('user_id', currentUserId);
-        } else {
-            await supabase.from('likes').insert({ item_id: item.id, user_id: currentUserId });
-            await insertNotification(item.user_id, currentUserId, 'like', item.id);
-        }
-        await fetchItemData();
-    };
+    const {
+        item,
+        currentUserId,
+        loading,
+        comments,
+        newComment,
+        setNewComment,
+        replyingTo,
+        setReplyingTo,
+        replyText,
+        setReplyText,
+        expandedReplies,
+        handleAddComment,
+        handleAddReply,
+        toggleReplies,
+        toggleLike
+    } = useItemDetail(itemId);
 
     if (loading) return <div className="p-10 text-center text-white">Loading...</div>;
     if (!item) return <div className="p-10 text-center text-white">が見つかりませんでした</div>;
 
-    const isLikedByMe = item.likes?.some((like: any) => like.user_id === currentUserId);
+    const isLikedByMe = item.likes?.some((like) => like.user_id === currentUserId);
     const likeCount = item.likes?.length || 0;
     const commentCount = item.comments?.length || 0;
 
@@ -338,7 +72,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
                                 <img src={item.image_url} alt="" className="w-full h-auto max-h-96 object-contain rounded-2xl border border-gray-100 shadow-sm" />
                             )}
                             {item.reflection && (
-                                <p className="text-gray-700 text-base bg-gray-50 p-6 rounded-2xl italic">"{item.reflection}"</p>
+                                <p className="text-gray-700 text-base bg-gray-50 p-6 rounded-2xl italic">&quot;{item.reflection}&quot;</p>
                             )}
                         </div>
                     )}
