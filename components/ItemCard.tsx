@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
 import { BucketItem } from '@/types/item';
 
 //ItemCardを使うための説明書
@@ -14,6 +15,8 @@ export type ItemCardProps = {
     isProfileView?: boolean;
     isMe?: boolean;
     onCompleteClick?: (item: BucketItem) => void;
+    onEditClick?: (item: BucketItem) => void;
+    onDeleteClick?: (item: BucketItem) => void;
 };
 
 export const ItemCard = ({
@@ -22,9 +25,27 @@ export const ItemCard = ({
     toggleLike,
     isProfileView = false,
     isMe = false,
-    onCompleteClick
+    onCompleteClick,
+    onEditClick,
+    onDeleteClick
 }: ItemCardProps) => {
     const router = useRouter();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        if (isMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isMenuOpen]);
 
     const isLikedByMe = item.likes?.some((like) => like.user_id === currentUserId);
     const likeCount = item.likes?.length || 0;
@@ -74,18 +95,68 @@ export const ItemCard = ({
                     {item.title}
                 </span>
 
-                {/* 自分のプロフィールかつ未完了の時だけチェックボタンを表示 */}
-                {isProfileView && isMe && !item.is_completed && onCompleteClick && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onCompleteClick(item);
-                        }}
-                        className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50/10 transition-colors shrink-0 ml-2"
-                        aria-label="完了にする"
-                    />
-                )}
-                {item.is_completed && <span className="text-green-500 text-xl font-bold shrink-0 ml-2">✅</span>}
+                <div className="flex items-center gap-2 ml-2 shrink-0">
+                    {/* 自分のプロフィールの場合だけメニューボタン・チェックボタンを表示 */}
+                    {isProfileView && isMe && (
+                        <>
+                            {!item.is_completed && onCompleteClick && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onCompleteClick(item);
+                                    }}
+                                    className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50/10 transition-colors"
+                                    aria-label="完了にする"
+                                />
+                            )}
+                            {(onEditClick || onDeleteClick) && (
+                                <div className="relative" ref={menuRef}>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsMenuOpen(!isMenuOpen);
+                                        }}
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700/50 text-gray-400 transition-colors"
+                                        aria-label="メニュー"
+                                    >
+                                        ⋮
+                                    </button>
+                                    {isMenuOpen && (
+                                        <div className="absolute right-0 mt-1 w-32 bg-[#2a2a2a] border border-gray-700 rounded-xl shadow-xl z-20 overflow-hidden text-left">
+                                            {onEditClick && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsMenuOpen(false);
+                                                        onEditClick(item);
+                                                    }}
+                                                    className="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-white/10 transition-colors"
+                                                >
+                                                    編集
+                                                </button>
+                                            )}
+                                            {onDeleteClick && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsMenuOpen(false);
+                                                        if (window.confirm('本当にこの投稿を削除しますか？')) {
+                                                            onDeleteClick(item);
+                                                        }
+                                                    }}
+                                                    className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition-colors border-t border-gray-700"
+                                                >
+                                                    削除
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {item.is_completed && <span className="text-green-500 text-xl font-bold">✅</span>}
+                </div>
             </div>
 
             {item.description && (

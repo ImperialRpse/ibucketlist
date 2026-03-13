@@ -3,6 +3,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ItemCard } from '@/components/ItemCard';
 import { AddItemModal } from '@/components/AddItemModal';
+import { EditItemModal } from '@/components/EditItemModal';
 import { CompleteItemModal } from '@/components/CompleteItemModal';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -40,6 +41,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     toggleLike,
     toggleFollow,
     addItem,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    editingItem,
+    setEditingItem,
+    editTitle,
+    setEditTitle,
+    editDescription,
+    setEditDescription,
+    updateItem,
+    deleteItem,
     handleCompleteSave,
     handleFileChange,
     handleStartMessage
@@ -137,6 +148,13 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               setSelectedItem(item);
               setIsCompleteModalOpen(true);
             }}
+            onEditClick={(item) => {
+              setEditingItem(item);
+              setEditTitle(item.title);
+              setEditDescription(item.description || '');
+              setIsEditModalOpen(true);
+            }}
+            onDeleteClick={deleteItem}
           />
         ))}
       </div>
@@ -160,6 +178,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         newItemDescription={newItemDescription}
         setNewItemDescription={setNewItemDescription}
         onAdd={addItem}
+      />
+
+      <EditItemModal
+        isOpen={isEditModalOpen}
+        setIsOpen={setIsEditModalOpen}
+        editTitle={editTitle}
+        setEditTitle={setEditTitle}
+        editDescription={editDescription}
+        setEditDescription={setEditDescription}
+        onSave={updateItem}
       />
 
       <CompleteItemModal

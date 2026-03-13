@@ -23,6 +23,12 @@ export const useProfile = (profileUserId: string) => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followerCount, setFollowerCount] = useState(0);
     const [followingCount, setFollowingCount] = useState(0);
+    
+    // 編集モーダル用のState
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<BucketItem | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [editDescription, setEditDescription] = useState('');
 
     const router = useRouter();
 
@@ -126,6 +132,42 @@ export const useProfile = (profileUserId: string) => {
         setNewItem('');
         setNewItemDescription('');
         setIsOpen(false);
+        fetchAllData();
+    };
+
+    const updateItem = async () => {
+        if (!isMe || !editingItem || !editTitle) return;
+
+        const { error } = await supabase
+            .from('bucket_items')
+            .update({ title: editTitle, description: editDescription })
+            .eq('id', editingItem.id);
+
+        if (error) {
+            alert('更新に失敗しました');
+            return;
+        }
+
+        setIsEditModalOpen(false);
+        setEditingItem(null);
+        setEditTitle('');
+        setEditDescription('');
+        fetchAllData();
+    };
+
+    const deleteItem = async (item: BucketItem) => {
+        if (!isMe) return;
+
+        const { error } = await supabase
+            .from('bucket_items')
+            .delete()
+            .eq('id', item.id);
+
+        if (error) {
+            alert('削除に失敗しました');
+            return;
+        }
+
         fetchAllData();
     };
 
@@ -263,6 +305,16 @@ export const useProfile = (profileUserId: string) => {
         toggleLike,
         toggleFollow,
         addItem,
+        isEditModalOpen,
+        setIsEditModalOpen,
+        editingItem,
+        setEditingItem,
+        editTitle,
+        setEditTitle,
+        editDescription,
+        setEditDescription,
+        updateItem,
+        deleteItem,
         handleCompleteSave,
         handleFileChange,
         handleStartMessage
