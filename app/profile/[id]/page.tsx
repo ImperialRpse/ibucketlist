@@ -28,6 +28,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     setNewItem,
     newItemDescription,
     setNewItemDescription,
+    newCategory,
+    setNewCategory,
     selectedItem,
     setSelectedItem,
     reflection,
@@ -49,6 +51,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     setEditTitle,
     editDescription,
     setEditDescription,
+    editCategory,
+    setEditCategory,
     updateItem,
     deleteItem,
     handleCompleteSave,
@@ -152,6 +156,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
               setEditingItem(item);
               setEditTitle(item.title);
               setEditDescription(item.description || '');
+              setEditCategory(item.category || 'その他');
               setIsEditModalOpen(true);
             }}
             onDeleteClick={deleteItem}
@@ -177,6 +182,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         setNewItem={setNewItem}
         newItemDescription={newItemDescription}
         setNewItemDescription={setNewItemDescription}
+        newCategory={newCategory}
+        setNewCategory={setNewCategory}
         onAdd={addItem}
       />
 
@@ -187,6 +194,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         setEditTitle={setEditTitle}
         editDescription={editDescription}
         setEditDescription={setEditDescription}
+        editCategory={editCategory}
+        setEditCategory={setEditCategory}
         onSave={updateItem}
       />
 

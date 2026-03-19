@@ -86,14 +86,21 @@ export const ItemCard = ({
             </div>
 
             <div className="flex justify-between items-start mb-2 mt-2">
-                <span className={`text-lg md:text-xl font-semibold 
-                    ${isProfileView
-                        ? item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'
-                        : 'text-gray-800'
-                    }
-                `}>
-                    {item.title}
-                </span>
+                <div className="flex flex-col">
+                    {item.category && (
+                        <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded w-fit mb-1 border border-blue-500/20">
+                            {item.category}
+                        </span>
+                    )}
+                    <span className={`text-lg md:text-xl font-semibold 
+                        ${isProfileView
+                            ? item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'
+                            : 'text-gray-800'
+                        }
+                    `}>
+                        {item.title}
+                    </span>
+                </div>
 
                 <div className="flex items-center gap-2 ml-2 shrink-0">
                     {/* 自分のプロフィールの場合だけメニューボタン・チェックボタンを表示 */}

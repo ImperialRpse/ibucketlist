@@ -1,4 +1,5 @@
 import { BucketItem } from '@/types/item';
+import { CATEGORIES } from '@/lib/constants';
 
 export type EditItemModalProps = {
     isOpen: boolean;
@@ -7,6 +8,8 @@ export type EditItemModalProps = {
     setEditTitle: (title: string) => void;
     editDescription: string;
     setEditDescription: (desc: string) => void;
+    editCategory: string;
+    setEditCategory: (cat: string) => void;
     onSave: () => void;
 };
 
@@ -17,6 +20,8 @@ export const EditItemModal = ({
     setEditTitle,
     editDescription,
     setEditDescription,
+    editCategory,
+    setEditCategory,
     onSave
 }: EditItemModalProps) => {
     if (!isOpen) return null;
@@ -33,6 +38,20 @@ export const EditItemModal = ({
                     placeholder="例：スカイダイビングをする"
                     autoFocus
                 />
+                
+                <div className="mb-4">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">カテゴリー</label>
+                    <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        className="w-full border-2 p-3 rounded-xl bg-gray-50 focus:border-blue-500 outline-none"
+                    >
+                        {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <textarea
                     className="w-full border-2 p-3 rounded-xl mb-4 bg-gray-50 focus:border-blue-500 outline-none resize-none"
                     value={editDescription}
@@ -41,8 +60,8 @@ export const EditItemModal = ({
                     rows={3}
                 />
                 <div className="flex gap-2">
-                    <button onClick={() => setIsOpen(false)} className="flex-1 text-gray-500 py-2 hover:bg-gray-100 rounded-xl transition-colors">キャンセル</button>
-                    <button onClick={onSave} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-bold transition-colors">保存</button>
+                    <button type="button" onClick={() => setIsOpen(false)} className="flex-1 text-gray-500 py-2 hover:bg-gray-100 rounded-xl transition-colors">キャンセル</button>
+                    <button type="button" onClick={onSave} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-bold transition-colors">保存</button>
                 </div>
             </div>
         </div>

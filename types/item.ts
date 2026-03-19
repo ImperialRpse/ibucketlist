@@ -25,6 +25,7 @@ export type BucketItem = {
     user_id: string;
     title: string;
     description: string | null;
+    category?: string | null;
     is_completed: boolean;
     image_url: string | null;
     reflection: string | null;

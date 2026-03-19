@@ -15,6 +15,7 @@ export const useProfile = (profileUserId: string) => {
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [newItem, setNewItem] = useState('');
     const [newItemDescription, setNewItemDescription] = useState('');
+    const [newCategory, setNewCategory] = useState('その他');
     const [selectedItem, setSelectedItem] = useState<BucketItem | null>(null);
     const [reflection, setReflection] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -29,6 +30,7 @@ export const useProfile = (profileUserId: string) => {
     const [editingItem, setEditingItem] = useState<BucketItem | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
+    const [editCategory, setEditCategory] = useState('その他');
 
     const router = useRouter();
 
@@ -126,11 +128,12 @@ export const useProfile = (profileUserId: string) => {
         if (!user) return;
 
         await supabase.from('bucket_items').insert([
-            { title: newItem, description: newItemDescription, user_id: user.id }
+            { title: newItem, description: newItemDescription, category: newCategory, user_id: user.id }
         ]);
 
         setNewItem('');
         setNewItemDescription('');
+        setNewCategory('その他');
         setIsOpen(false);
         fetchAllData();
     };
@@ -140,7 +143,7 @@ export const useProfile = (profileUserId: string) => {
 
         const { error } = await supabase
             .from('bucket_items')
-            .update({ title: editTitle, description: editDescription })
+            .update({ title: editTitle, description: editDescription, category: editCategory })
             .eq('id', editingItem.id);
 
         if (error) {
@@ -152,6 +155,7 @@ export const useProfile = (profileUserId: string) => {
         setEditingItem(null);
         setEditTitle('');
         setEditDescription('');
+        setEditCategory('その他');
         fetchAllData();
     };
 
@@ -292,6 +296,8 @@ export const useProfile = (profileUserId: string) => {
         setNewItem,
         newItemDescription,
         setNewItemDescription,
+        newCategory,
+        setNewCategory,
         selectedItem,
         setSelectedItem,
         reflection,
@@ -313,6 +319,8 @@ export const useProfile = (profileUserId: string) => {
         setEditTitle,
         editDescription,
         setEditDescription,
+        editCategory,
+        setEditCategory,
         updateItem,
         deleteItem,
         handleCompleteSave,
