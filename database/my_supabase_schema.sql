@@ -499,9 +499,64 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
+-- --------------------------------------------------------
+-- Explore Page functions (Full-text / Fuzzy Search)
+-- --------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+CREATE INDEX IF NOT EXISTS bucket_items_title_trgm_idx ON public.bucket_items USING gin (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS bucket_items_category_trgm_idx ON public.bucket_items USING gin (category gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS profiles_display_name_trgm_idx ON public.profiles USING gin (display_name gin_trgm_ops);
 
+CREATE OR REPLACE FUNCTION "public"."search_bucket_items"(
+  "search_term" TEXT,
+  "limit_num" INT,
+  "offset_num" INT
+)
+RETURNS SETOF "public"."bucket_items"
+LANGUAGE sql
+AS $$
+  SELECT *
+  FROM public.bucket_items
+  WHERE 
+    search_term = ''
+    OR title % search_term 
+    OR title ILIKE '%' || search_term || '%'
+    OR category % search_term
+    OR category ILIKE '%' || search_term || '%'
+  ORDER BY 
+    CASE WHEN search_term != '' THEN GREATEST(similarity(title, search_term), similarity(category, search_term)) ELSE 0 END DESC,
+    created_at DESC
+  LIMIT limit_num
+  OFFSET offset_num;
+$$;
 
+CREATE OR REPLACE FUNCTION "public"."search_profiles"(
+  "search_term" TEXT,
+  "limit_num" INT,
+  "offset_num" INT
+)
+RETURNS SETOF "public"."profiles"
+LANGUAGE sql
+AS $$
+  SELECT *
+  FROM public.profiles
+  WHERE 
+    search_term = ''
+    OR display_name % search_term 
+    OR display_name ILIKE '%' || search_term || '%'
+  ORDER BY 
+    CASE WHEN search_term != '' THEN similarity(display_name, search_term) ELSE 0 END DESC,
+    updated_at DESC NULLS LAST,
+    id DESC
+  LIMIT limit_num
+  OFFSET offset_num;
+$$;
 
+GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "anon";
+GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "service_role";
 
-
+GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "anon";
+GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "service_role";
