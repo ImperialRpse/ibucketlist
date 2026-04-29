@@ -1,10 +1,12 @@
 'use client';
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import { ItemCard } from '@/components/ItemCard';
 import { AddItemModal } from '@/components/AddItemModal';
 import { EditItemModal } from '@/components/EditItemModal';
 import { CompleteItemModal } from '@/components/CompleteItemModal';
+import { FollowListModal } from '@/components/FollowListModal';
+import { FollowRequestsModal } from '@/components/FollowRequestsModal';
 import { useProfile } from '@/hooks/useProfile';
 
 //フォルダ名が [id] なら、プログラムの中では id という名前でデータを受け取れます。
@@ -14,12 +16,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   //use()は、ブラウザ側のコンポーネントで Promise（予約票）を開封するための特別な道具。
   const { id: profileUserId } = use(params);
 
+  // フォローリクエストモーダルの開閉状態
+  const [isFollowRequestsModalOpen, setIsFollowRequestsModalOpen] = useState(false);
+
   const {
     items,
     profile,
     isMe,
     loading,
     currentUserId,
+    isPrivateRestricted,
     isOpen,
     setIsOpen,
     isCompleteModalOpen,
@@ -38,6 +44,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     imageFile,
     previewUrl,
     isFollowing,
+    isRequestSent,
     followerCount,
     followingCount,
     toggleLike,
@@ -57,10 +64,21 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     deleteItem,
     handleCompleteSave,
     handleFileChange,
-    handleStartMessage
+    handleStartMessage,
+    followModalType,
+    followListUsers,
+    followListLoading,
+    openFollowModal,
+    closeFollowModal
   } = useProfile(profileUserId);
 
   if (loading) return <div className="p-10 text-center text-white">Loading...</div>;
+
+  // フォローボタンのスタイルとラベルを状態に応じて切り替える
+  const followButtonLabel = isFollowing ? 'Following' : isRequestSent ? 'Requested' : 'Follow';
+  const followButtonClass = (isFollowing || isRequestSent)
+    ? 'bg-white/10 text-white border border-gray-600 hover:bg-white/20'
+    : 'bg-blue-500 hover:bg-blue-600 text-white';
 
   return (
     <div className="max-w-md mx-auto p-4 pb-24 text-white">
@@ -87,24 +105,41 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
             <h2 className="text-2xl font-light text-white tracking-tight whitespace-nowrap shrink-0">
               {profile?.display_name || 'ユーザー名'}
             </h2>
+            {/* プライベートバッジ */}
+            {profile && profile.is_public === false && (
+              <span className="text-xs bg-white/10 text-gray-300 border border-gray-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                🔒 非公開
+              </span>
+            )}
 
             {isMe ? (
-              <Link
-                href="/profile/settings"
-                className="inline-block bg-white/20 hover:bg-white/30 text-white text-sm font-bold py-1.5 px-6 rounded-lg transition-colors text-center"
-              >
-                Edit Profile
-              </Link>
+              <div className="flex gap-2 flex-wrap justify-center md:justify-start">
+                <Link
+                  href="/profile/settings"
+                  className="inline-block bg-white/20 hover:bg-white/30 text-white text-sm font-bold py-1.5 px-6 rounded-lg transition-colors text-center"
+                >
+                  Edit Profile
+                </Link>
+                {/* 自分のプロフィールが非公開の場合、フォローリクエストボタンを表示 */}
+                {profile?.is_public === false && (
+                  <button
+                    id="follow-requests-btn"
+                    onClick={() => setIsFollowRequestsModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-1.5 px-4 rounded-lg transition-colors border border-gray-600"
+                  >
+                    <span>📥</span>
+                    <span>フォローリクエスト</span>
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="flex gap-2">
                 <button
+                  id="follow-toggle-btn"
                   onClick={toggleFollow}
-                  className={`py-1.5 px-6 rounded-lg font-bold text-sm transition-all ${isFollowing
-                    ? 'bg-white/10 text-white border border-gray-600 hover:bg-white/20'
-                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                    }`}
+                  className={`py-1.5 px-6 rounded-lg font-bold text-sm transition-all ${followButtonClass}`}
                 >
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {followButtonLabel}
                 </button>
                 <button
                   onClick={handleStartMessage}
@@ -113,15 +148,24 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 >
                   {loading ? 'Connecting...' : 'Message'}
                 </button>
-
               </div>
             )}
           </div>
 
           <div className="flex justify-center md:justify-start gap-6 mb-4 text-gray-300 text-sm">
             <div><span className="font-bold text-white">{items.length}</span> posts</div>
-            <div><span className="font-bold text-white">{followerCount}</span> followers</div>
-            <div><span className="font-bold text-white">{followingCount}</span> following</div>
+            <button
+              onClick={() => openFollowModal('followers')}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              <span className="font-bold text-white">{followerCount}</span> followers
+            </button>
+            <button
+              onClick={() => openFollowModal('following')}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              <span className="font-bold text-white">{followingCount}</span> following
+            </button>
           </div>
 
           <div className="text-sm">
@@ -139,30 +183,46 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* リスト表示 */}
-      <div className="space-y-4">
-        {items.map((item) => (
-          <ItemCard
-            key={item.id}
-            item={item}
-            currentUserId={currentUserId}
-            toggleLike={toggleLike}
-            isProfileView={true}
-            isMe={isMe}
-            onCompleteClick={(item) => {
-              setSelectedItem(item);
-              setIsCompleteModalOpen(true);
-            }}
-            onEditClick={(item) => {
-              setEditingItem(item);
-              setEditTitle(item.title);
-              setEditDescription(item.description || '');
-              setEditCategory(item.category || 'その他');
-              setIsEditModalOpen(true);
-            }}
-            onDeleteClick={deleteItem}
-          />
-        ))}
-      </div>
+      {isPrivateRestricted ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl">
+            🔒
+          </div>
+          <p className="text-white font-semibold text-lg">このアカウントは非公開です</p>
+          <p className="text-gray-400 text-sm">
+            {currentUserId
+              ? isRequestSent
+                ? 'フォローリクエストを送信しました。承認をお待ちください'
+                : 'フォローすると投稿を見られます'
+              : 'ログインしてフォローすると投稿を見られます'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item) => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              currentUserId={currentUserId}
+              toggleLike={toggleLike}
+              isProfileView={true}
+              isMe={isMe}
+              onCompleteClick={(item) => {
+                setSelectedItem(item);
+                setIsCompleteModalOpen(true);
+              }}
+              onEditClick={(item) => {
+                setEditingItem(item);
+                setEditTitle(item.title);
+                setEditDescription(item.description || '');
+                setEditCategory(item.category || 'その他');
+                setIsEditModalOpen(true);
+              }}
+              onDeleteClick={deleteItem}
+            />
+          ))}
+        </div>
+      )}
 
       {/* 自分のみ＋ボタンを表示 */}
       {isMe && (
@@ -210,6 +270,20 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         uploading={uploading}
         handleFileChange={handleFileChange}
         handleCompleteSave={handleCompleteSave}
+      />
+
+      <FollowListModal
+        isOpen={followModalType !== null}
+        onClose={closeFollowModal}
+        title={followModalType === 'followers' ? 'Followers' : 'Following'}
+        users={followListUsers}
+        loading={followListLoading}
+      />
+
+      {/* フォローリクエストモーダル（自分のプロフィールのみ） */}
+      <FollowRequestsModal
+        isOpen={isFollowRequestsModalOpen}
+        onClose={() => setIsFollowRequestsModalOpen(false)}
       />
     </div>
   );

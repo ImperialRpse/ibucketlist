@@ -12,6 +12,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   const [myId, setMyId] = useState<string | null>(null);
   const [partner, setPartner] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -73,7 +74,12 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   }, [roomId, router]);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      scrollRef.current?.scrollIntoView({
+        behavior: isInitialLoad.current ? 'auto' : 'smooth'
+      });
+      isInitialLoad.current = false;
+    }
   }, [messages]);
 
   //data baseでRPC関数呼び出し

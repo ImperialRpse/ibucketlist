@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-type NotifType = 'like' | 'comment' | 'reply' | 'follow' | 'dm';
+type NotifType = 'like' | 'comment' | 'reply' | 'follow' | 'follow_request' | 'follow_request_approved' | 'dm';
 
 /**
  * 通知をINSERTする共通関数

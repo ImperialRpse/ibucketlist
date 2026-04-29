@@ -4,6 +4,8 @@ import { insertNotification } from '@/lib/notifications';
 import { useRouter } from 'next/navigation';
 import { BucketItem, Profile } from '@/types/item';
 
+type FollowModalType = 'followers' | 'following' | null;
+
 export const useProfile = (profileUserId: string) => {
     const [items, setItems] = useState<BucketItem[]>([]);
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -22,8 +24,17 @@ export const useProfile = (profileUserId: string) => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [isRequestSent, setIsRequestSent] = useState(false);
     const [followerCount, setFollowerCount] = useState(0);
     const [followingCount, setFollowingCount] = useState(0);
+
+    // フォロー一覧モーダル用
+    const [followModalType, setFollowModalType] = useState<FollowModalType>(null);
+    const [followListUsers, setFollowListUsers] = useState<Profile[]>([]);
+    const [followListLoading, setFollowListLoading] = useState(false);
+
+    // プライベートアカウント制御用
+    const [isPrivateRestricted, setIsPrivateRestricted] = useState(false);
     
     // 編集モーダル用のState
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -45,16 +56,46 @@ export const useProfile = (profileUserId: string) => {
 
         const { data: bucketData } = await supabase
             .from('bucket_items')
-            .select('*, profiles(display_name, bio, avatar_url), likes(user_id), comments(id)')
+            .select('*, profiles(display_name, bio, avatar_url, is_public), likes(user_id), comments(id)')
             .eq('user_id', profileUserId)
             .order('created_at', { ascending: false });
 
         if (bucketData) {
-            setItems(bucketData as BucketItem[]);
-            if (bucketData.length > 0) setProfile(bucketData[0].profiles as Profile);
-            else {
+            // プロフィール取得
+            let fetchedProfile: Profile | null = null;
+            if (bucketData.length > 0) {
+                fetchedProfile = bucketData[0].profiles as Profile;
+                setProfile(fetchedProfile);
+            } else {
                 const { data: prof } = await supabase.from('profiles').select('*').eq('id', profileUserId).single();
-                setProfile(prof as Profile);
+                fetchedProfile = prof as Profile;
+                setProfile(fetchedProfile);
+            }
+
+            // プライベートアカウントのアクセス制御
+            const isPrivate = fetchedProfile && fetchedProfile.is_public === false;
+            if (isPrivate && !currentIsMe) {
+                // フォロワーかどうか確認
+                let isFollower = false;
+                if (currentUser) {
+                    const { data: followCheck } = await supabase
+                        .from('follows')
+                        .select('*')
+                        .eq('follower_id', currentUser.id)
+                        .eq('following_id', profileUserId)
+                        .maybeSingle();
+                    isFollower = !!followCheck;
+                }
+                if (!isFollower) {
+                    setItems([]);
+                    setIsPrivateRestricted(true);
+                } else {
+                    setItems(bucketData as BucketItem[]);
+                    setIsPrivateRestricted(false);
+                }
+            } else {
+                setItems(bucketData as BucketItem[]);
+                setIsPrivateRestricted(false);
             }
         }
 
@@ -80,6 +121,16 @@ export const useProfile = (profileUserId: string) => {
                 .maybeSingle();
 
             setIsFollowing(!!followData);
+
+            // フォローリクエスト送信済みかどうか確認
+            const { data: requestData } = await supabase
+                .from('follow_requests')
+                .select('id')
+                .eq('requester_id', currentUser.id)
+                .eq('target_id', profileUserId)
+                .maybeSingle();
+
+            setIsRequestSent(!!requestData);
         }
 
         setLoading(false);
@@ -107,13 +158,28 @@ export const useProfile = (profileUserId: string) => {
         if (!user) return alert("ログインが必要です");
 
         if (isFollowing) {
+            // フォロー解除
             await supabase.from('follows')
                 .delete()
                 .eq('follower_id', user.id)
                 .eq('following_id', profileUserId);
             setIsFollowing(false);
             setFollowerCount(prev => prev - 1);
+        } else if (isRequestSent) {
+            // フォローリクエストをキャンセル
+            await supabase.from('follow_requests')
+                .delete()
+                .eq('requester_id', user.id)
+                .eq('target_id', profileUserId);
+            setIsRequestSent(false);
+        } else if (profile?.is_public === false) {
+            // 非公開アカウント → フォローリクエスト送信
+            await supabase.from('follow_requests')
+                .insert({ requester_id: user.id, target_id: profileUserId });
+            await insertNotification(profileUserId, user.id, 'follow_request');
+            setIsRequestSent(true);
         } else {
+            // 公開アカウント → 即時フォロー
             await supabase.from('follows')
                 .insert({ follower_id: user.id, following_id: profileUserId });
             await insertNotification(profileUserId, user.id, 'follow');
@@ -282,12 +348,73 @@ export const useProfile = (profileUserId: string) => {
         }
     };
 
+    const openFollowModal = useCallback(async (type: 'followers' | 'following') => {
+        setFollowModalType(type);
+        setFollowListUsers([]);
+        setFollowListLoading(true);
+
+        try {
+            if (type === 'followers') {
+                // Step1: このユーザーをフォローしている人のIDを取得
+                const { data: followData, error: followError } = await supabase
+                    .from('follows')
+                    .select('follower_id')
+                    .eq('following_id', profileUserId);
+
+                if (followError) throw followError;
+
+                const ids = (followData ?? []).map((row) => row.follower_id).filter(Boolean);
+                if (ids.length === 0) { setFollowListUsers([]); return; }
+
+                // Step2: IDからプロフィールを取得
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id, display_name, avatar_url, bio')
+                    .in('id', ids);
+
+                if (profileError) throw profileError;
+                setFollowListUsers((profileData ?? []) as Profile[]);
+
+            } else {
+                // Step1: このユーザーがフォローしている人のIDを取得
+                const { data: followData, error: followError } = await supabase
+                    .from('follows')
+                    .select('following_id')
+                    .eq('follower_id', profileUserId);
+
+                if (followError) throw followError;
+
+                const ids = (followData ?? []).map((row) => row.following_id).filter(Boolean);
+                if (ids.length === 0) { setFollowListUsers([]); return; }
+
+                // Step2: IDからプロフィールを取得
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id, display_name, avatar_url, bio')
+                    .in('id', ids);
+
+                if (profileError) throw profileError;
+                setFollowListUsers((profileData ?? []) as Profile[]);
+            }
+        } catch (e) {
+            console.error('followModal error:', e);
+        } finally {
+            setFollowListLoading(false);
+        }
+    }, [profileUserId]);
+
+    const closeFollowModal = useCallback(() => {
+        setFollowModalType(null);
+        setFollowListUsers([]);
+    }, []);
+
     return {
         items,
         profile,
         isMe,
         loading,
         currentUserId,
+        isPrivateRestricted,
         isOpen,
         setIsOpen,
         isCompleteModalOpen,
@@ -306,6 +433,7 @@ export const useProfile = (profileUserId: string) => {
         imageFile,
         previewUrl,
         isFollowing,
+        isRequestSent,
         followerCount,
         followingCount,
         toggleLike,
@@ -325,6 +453,11 @@ export const useProfile = (profileUserId: string) => {
         deleteItem,
         handleCompleteSave,
         handleFileChange,
-        handleStartMessage
+        handleStartMessage,
+        followModalType,
+        followListUsers,
+        followListLoading,
+        openFollowModal,
+        closeFollowModal
     };
 };

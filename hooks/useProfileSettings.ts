@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 export const useProfileSettings = () => {
     const [name, setName] = useState('');
     const [bio, setBio] = useState('');
+    const [isPublic, setIsPublic] = useState(true);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export const useProfileSettings = () => {
                 setUserId(user.id);
                 const { data } = await supabase
                     .from('profiles')
-                    .select('display_name, bio, avatar_url')
+                    .select('display_name, bio, avatar_url, is_public')
                     .eq('id', user.id)
                     .single();
 
@@ -27,6 +28,7 @@ export const useProfileSettings = () => {
                     setName(data.display_name || '');
                     setBio(data.bio || '');
                     setAvatarUrl(data.avatar_url || null);
+                    setIsPublic(data.is_public ?? true);
                 }
             }
             setLoading(false);
@@ -85,6 +87,7 @@ export const useProfileSettings = () => {
             id: userId,
             display_name: name,
             bio: bio,
+            is_public: isPublic,
             updated_at: new Date(),
         });
 
@@ -114,6 +117,8 @@ export const useProfileSettings = () => {
         setName,
         bio,
         setBio,
+        isPublic,
+        setIsPublic,
         loading,
         saving,
         avatarUrl,

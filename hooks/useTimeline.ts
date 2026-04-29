@@ -3,18 +3,21 @@ import { supabase } from '@/lib/supabase';
 import { insertNotification } from '@/lib/notifications';
 import { BucketItem } from '@/types/item';
 
+export type TimelineTab = 'all' | 'following';
+
 export const useTimeline = () => {
     const [items, setItems] = useState<BucketItem[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<TimelineTab>('all');
 
-    const fetchAllItems = useCallback(async () => {
+    const fetchAllItems = useCallback(async (userId?: string | null) => {
         setLoading(true);
         const { data, error } = await supabase
             .from('bucket_items')
             .select(`
                 *,
-                profiles ( display_name, avatar_url ),
+                profiles ( display_name, avatar_url, is_public ),
                 likes ( user_id ),
                 comments ( id ) 
             `)
@@ -22,6 +25,51 @@ export const useTimeline = () => {
 
         if (error) {
             console.error("Fetch Error:", error.message);
+        } else if (data) {
+            const filteredData = data.filter((item: any) => 
+                item.profiles?.is_public !== false || item.user_id === userId
+            );
+            setItems(filteredData as BucketItem[]);
+        }
+        setLoading(false);
+    }, []);
+
+    const fetchFollowingItems = useCallback(async (userId: string) => {
+        setLoading(true);
+
+        // 自分がフォローしているユーザーのIDを取得
+        const { data: followData, error: followError } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', userId);
+
+        if (followError) {
+            console.error("Follow Fetch Error:", followError.message);
+            setLoading(false);
+            return;
+        }
+
+        const followingIds = followData?.map((f) => f.following_id) ?? [];
+
+        if (followingIds.length === 0) {
+            setItems([]);
+            setLoading(false);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('bucket_items')
+            .select(`
+                *,
+                profiles ( display_name, avatar_url, is_public ),
+                likes ( user_id ),
+                comments ( id ) 
+            `)
+            .in('user_id', followingIds)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Following Items Fetch Error:", error.message);
         } else if (data) {
             setItems(data as BucketItem[]);
         }
@@ -31,11 +79,21 @@ export const useTimeline = () => {
     useEffect(() => {
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (user) setCurrentUserId(user.id);
-            await fetchAllItems();
+            const uid = user?.id ?? null;
+            if (uid) setCurrentUserId(uid);
+            await fetchAllItems(uid);
         };
         init();
     }, [fetchAllItems]);
+
+    // タブ切り替え時のデータ再取得
+    useEffect(() => {
+        if (activeTab === 'all') {
+            fetchAllItems(currentUserId);
+        } else if (activeTab === 'following' && currentUserId) {
+            fetchFollowingItems(currentUserId);
+        }
+    }, [activeTab, currentUserId, fetchAllItems, fetchFollowingItems]);
 
     const toggleLike = async (e: React.MouseEvent, itemId: string, isLikedByMe: boolean) => {
         e.stopPropagation();
@@ -48,13 +106,21 @@ export const useTimeline = () => {
             const item = items.find((i) => i.id === itemId);
             if (item) await insertNotification(item.user_id, currentUserId, 'like', itemId);
         }
-        await fetchAllItems();
+
+        // いいね後も現在のタブのデータを再取得
+        if (activeTab === 'all') {
+            await fetchAllItems(currentUserId);
+        } else if (currentUserId) {
+            await fetchFollowingItems(currentUserId);
+        }
     };
 
     return {
         items,
         currentUserId,
         loading,
-        toggleLike
+        activeTab,
+        setActiveTab,
+        toggleLike,
     };
 };

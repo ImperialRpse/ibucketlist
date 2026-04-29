@@ -1,4 +1,4 @@
-
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 
 SET statement_timeout = 0;
@@ -55,6 +55,88 @@ $$;
 
 ALTER FUNCTION "public"."mark_messages_as_read"("target_room_id" "uuid") OWNER TO "postgres";
 
+SET default_tablespace = '';
+
+SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."bucket_items" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "is_completed" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    "image_url" "text",
+    "reflection" "text",
+    "description" "text",
+    "category" "text" DEFAULT 'その他'::"text"
+);
+
+
+ALTER TABLE "public"."bucket_items" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."search_bucket_items"("search_term" "text", "limit_num" integer, "offset_num" integer) RETURNS SETOF "public"."bucket_items"
+    LANGUAGE "sql"
+    AS $$
+  SELECT *
+  FROM bucket_items
+  WHERE 
+    -- キーワードが空の場合は全て返す（カテゴリクリック時のため）
+    search_term = ''
+    -- title または category で曖昧検索
+    OR title % search_term 
+    OR title ILIKE '%' || search_term || '%'
+    OR category % search_term
+    OR category ILIKE '%' || search_term || '%'
+  ORDER BY 
+    -- 検索キーワードがある場合は類似度順、それ以外は作成日順
+    CASE WHEN search_term != '' THEN GREATEST(similarity(title, search_term), similarity(category, search_term)) ELSE 0 END DESC,
+    created_at DESC
+  LIMIT limit_num
+  OFFSET offset_num;
+$$;
+
+
+ALTER FUNCTION "public"."search_bucket_items"("search_term" "text", "limit_num" integer, "offset_num" integer) OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."profiles" (
+    "id" "uuid" NOT NULL,
+    "display_name" "text",
+    "updated_at" timestamp with time zone,
+    "bio" "text",
+    "avatar_url" "text",
+    "is_public" boolean DEFAULT true NOT NULL
+);
+
+
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."search_profiles"("search_term" "text", "limit_num" integer, "offset_num" integer) RETURNS SETOF "public"."profiles"
+    LANGUAGE "sql"
+    AS $$
+  SELECT *
+  FROM profiles
+  WHERE 
+    search_term = ''
+    OR display_name % search_term 
+    OR display_name ILIKE '%' || search_term || '%'
+  ORDER BY 
+    -- 1. 類似度が高い順（最優先）
+    CASE WHEN search_term != '' THEN similarity(display_name, search_term) ELSE 0 END DESC,
+    -- 2. updated_at がある場合は新しい順（第2優先、NULLは最後に回る）
+    updated_at DESC NULLS LAST,
+    -- 3. id で最終的な順序を固定（これが重要！）
+    id DESC
+  LIMIT limit_num
+  OFFSET offset_num;
+$$;
+
+
+ALTER FUNCTION "public"."search_profiles"("search_term" "text", "limit_num" integer, "offset_num" integer) OWNER TO "postgres";
+
 
 CREATE OR REPLACE FUNCTION "public"."update_room_last_message"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -76,32 +158,14 @@ $$;
 
 ALTER FUNCTION "public"."update_room_last_message"() OWNER TO "postgres";
 
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
-
-
-CREATE TABLE IF NOT EXISTS "public"."bucket_items" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    "title" "text" NOT NULL,
-    "is_completed" boolean DEFAULT false,
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "image_url" "text",
-    "reflection" "text",
-    "description" "text"
-);
-
-
-ALTER TABLE "public"."bucket_items" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."comments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "item_id" "uuid" NOT NULL,
     "user_id" "uuid" NOT NULL,
     "content" "text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    "parent_id" "uuid"
 );
 
 
@@ -152,6 +216,17 @@ CREATE TABLE IF NOT EXISTS "public"."follows" (
 ALTER TABLE "public"."follows" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."follow_requests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "requester_id" "uuid" NOT NULL,
+    "target_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
+);
+
+
+ALTER TABLE "public"."follow_requests" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."likes" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -163,16 +238,18 @@ CREATE TABLE IF NOT EXISTS "public"."likes" (
 ALTER TABLE "public"."likes" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."profiles" (
-    "id" "uuid" NOT NULL,
-    "display_name" "text",
-    "updated_at" timestamp with time zone,
-    "bio" "text",
-    "avatar_url" "text"
+CREATE TABLE IF NOT EXISTS "public"."notifications" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "actor_id" "uuid",
+    "type" "text" NOT NULL,
+    "item_id" "uuid",
+    "is_read" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
 );
 
 
-ALTER TABLE "public"."profiles" OWNER TO "postgres";
+ALTER TABLE "public"."notifications" OWNER TO "postgres";
 
 
 ALTER TABLE ONLY "public"."bucket_items"
@@ -220,8 +297,33 @@ ALTER TABLE ONLY "public"."likes"
 
 
 
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+
+
+
+CREATE INDEX "bucket_items_category_trgm_idx" ON "public"."bucket_items" USING "gin" ("category" "public"."gin_trgm_ops");
+
+
+
+CREATE INDEX "bucket_items_title_trgm_idx" ON "public"."bucket_items" USING "gin" ("title" "public"."gin_trgm_ops");
+
+
+
+CREATE INDEX "comments_parent_id_idx" ON "public"."comments" USING "btree" ("parent_id");
+
+
+
+CREATE INDEX "notifications_user_unread" ON "public"."notifications" USING "btree" ("user_id", "is_read", "created_at" DESC);
+
+
+
+CREATE INDEX "profiles_display_name_trgm_idx" ON "public"."profiles" USING "gin" ("display_name" "public"."gin_trgm_ops");
 
 
 
@@ -236,6 +338,11 @@ ALTER TABLE ONLY "public"."bucket_items"
 
 ALTER TABLE ONLY "public"."comments"
     ADD CONSTRAINT "comments_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "public"."bucket_items"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."comments"
+    ADD CONSTRAINT "comments_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."comments"("id") ON DELETE CASCADE;
 
 
 
@@ -284,6 +391,21 @@ ALTER TABLE ONLY "public"."likes"
 
 
 
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "public"."bucket_items"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id");
 
@@ -297,11 +419,23 @@ CREATE POLICY "Authenticated users can comment" ON "public"."comments" FOR INSER
 
 
 
+CREATE POLICY "Authenticated users can insert notifications" ON "public"."notifications" FOR INSERT WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
+
+
+
+CREATE POLICY "Bucket items are viewable by everyone." ON "public"."bucket_items" FOR SELECT USING (true);
+
+
+
 CREATE POLICY "Enable read access for all users" ON "public"."bucket_items" FOR SELECT USING (true);
 
 
 
 CREATE POLICY "Everyone can view follows" ON "public"."follows" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Public profiles are viewable by everyone." ON "public"."profiles" FOR SELECT USING (true);
 
 
 
@@ -317,7 +451,15 @@ CREATE POLICY "Users can unfollow" ON "public"."follows" FOR DELETE USING (("aut
 
 
 
+CREATE POLICY "Users can update own notifications" ON "public"."notifications" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Users can view own notifications" ON "public"."notifications" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -374,6 +516,9 @@ ALTER TABLE "public"."follows" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."likes" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
@@ -420,15 +565,33 @@ GRANT ALL ON FUNCTION "public"."mark_messages_as_read"("target_room_id" "uuid") 
 
 
 
-GRANT ALL ON FUNCTION "public"."update_room_last_message"() TO "anon";
-GRANT ALL ON FUNCTION "public"."update_room_last_message"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."update_room_last_message"() TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."bucket_items" TO "anon";
 GRANT ALL ON TABLE "public"."bucket_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."bucket_items" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" "text", "limit_num" integer, "offset_num" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" "text", "limit_num" integer, "offset_num" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" "text", "limit_num" integer, "offset_num" integer) TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."profiles" TO "anon";
+GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" "text", "limit_num" integer, "offset_num" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" "text", "limit_num" integer, "offset_num" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" "text", "limit_num" integer, "offset_num" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_room_last_message"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_room_last_message"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_room_last_message"() TO "service_role";
 
 
 
@@ -468,9 +631,9 @@ GRANT ALL ON TABLE "public"."likes" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."profiles" TO "anon";
-GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
-GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+GRANT ALL ON TABLE "public"."notifications" TO "anon";
+GRANT ALL ON TABLE "public"."notifications" TO "authenticated";
+GRANT ALL ON TABLE "public"."notifications" TO "service_role";
 
 
 
@@ -499,64 +662,9 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
--- --------------------------------------------------------
--- Explore Page functions (Full-text / Fuzzy Search)
--- --------------------------------------------------------
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
-CREATE INDEX IF NOT EXISTS bucket_items_title_trgm_idx ON public.bucket_items USING gin (title gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS bucket_items_category_trgm_idx ON public.bucket_items USING gin (category gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS profiles_display_name_trgm_idx ON public.profiles USING gin (display_name gin_trgm_ops);
 
-CREATE OR REPLACE FUNCTION "public"."search_bucket_items"(
-  "search_term" TEXT,
-  "limit_num" INT,
-  "offset_num" INT
-)
-RETURNS SETOF "public"."bucket_items"
-LANGUAGE sql
-AS $$
-  SELECT *
-  FROM public.bucket_items
-  WHERE 
-    search_term = ''
-    OR title % search_term 
-    OR title ILIKE '%' || search_term || '%'
-    OR category % search_term
-    OR category ILIKE '%' || search_term || '%'
-  ORDER BY 
-    CASE WHEN search_term != '' THEN GREATEST(similarity(title, search_term), similarity(category, search_term)) ELSE 0 END DESC,
-    created_at DESC
-  LIMIT limit_num
-  OFFSET offset_num;
-$$;
 
-CREATE OR REPLACE FUNCTION "public"."search_profiles"(
-  "search_term" TEXT,
-  "limit_num" INT,
-  "offset_num" INT
-)
-RETURNS SETOF "public"."profiles"
-LANGUAGE sql
-AS $$
-  SELECT *
-  FROM public.profiles
-  WHERE 
-    search_term = ''
-    OR display_name % search_term 
-    OR display_name ILIKE '%' || search_term || '%'
-  ORDER BY 
-    CASE WHEN search_term != '' THEN similarity(display_name, search_term) ELSE 0 END DESC,
-    updated_at DESC NULLS LAST,
-    id DESC
-  LIMIT limit_num
-  OFFSET offset_num;
-$$;
 
-GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "anon";
-GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."search_bucket_items"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "service_role";
 
-GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "anon";
-GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."search_profiles"("search_term" TEXT, "limit_num" INT, "offset_num" INT) TO "service_role";
+

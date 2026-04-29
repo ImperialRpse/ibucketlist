@@ -29,7 +29,22 @@ export const useExplore = (searchQuery: string, category: string, tab: 'items' |
         });
 
         if (error) throw error;
-        setItems((data as BucketItem[]) || []);
+        
+        let filteredData = data;
+        if (data && data.length > 0) {
+          const userIds = [...new Set(data.map((item: any) => item.user_id))];
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, is_public')
+            .in('id', userIds);
+          
+          const publicUserIds = new Set(
+            profilesData?.filter(p => p.is_public !== false).map(p => p.id) || []
+          );
+          filteredData = data.filter((item: any) => publicUserIds.has(item.user_id));
+        }
+
+        setItems((filteredData as BucketItem[]) || []);
         setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
       } 
       // users tab の場合は検索語のみをキーワードとする
@@ -75,10 +90,21 @@ export const useExplore = (searchQuery: string, category: string, tab: 'items' |
         if (error) throw error;
         
         if (data && data.length > 0) {
+          const userIds = [...new Set(data.map((item: any) => item.user_id))];
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, is_public')
+            .in('id', userIds);
+          
+          const publicUserIds = new Set(
+            profilesData?.filter(p => p.is_public !== false).map(p => p.id) || []
+          );
+          const filteredData = data.filter((item: any) => publicUserIds.has(item.user_id));
+
           setItems(prev => {
             // 重複排除ロジック（万が一の重複防止）
             const prevIds = new Set(prev.map(i => i.id));
-            const newItems = (data as BucketItem[]).filter(i => !prevIds.has(i.id));
+            const newItems = (filteredData as BucketItem[]).filter(i => !prevIds.has(i.id));
             return [...prev, ...newItems];
           });
           setPage(nextPage);

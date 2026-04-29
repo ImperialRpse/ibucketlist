@@ -14,6 +14,8 @@ const notifLabel = (n: Notification): string => {
         case 'comment': return `${name} があなたの投稿にコメントしました`;
         case 'reply': return `${name} があなたのコメントに返信しました`;
         case 'follow': return `${name} があなたをフォローしました`;
+        case 'follow_request': return `${name} がフォローリクエストを送りました`;
+        case 'follow_request_approved': return `${name} があなたのフォローリクエストを承認しました`;
         case 'dm': return `${name} からメッセージが届きました`;
         default: return '新しい通知があります';
     }

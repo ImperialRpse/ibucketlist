@@ -3,6 +3,15 @@ export type Profile = {
     display_name: string | null;
     avatar_url: string | null;
     bio: string | null;
+    is_public: boolean;
+};
+
+export type FollowRequest = {
+    id: string;
+    requester_id: string;
+    target_id: string;
+    created_at: string;
+    profiles?: Profile;
 };
 
 export type Comment = {

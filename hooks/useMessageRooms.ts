@@ -86,8 +86,11 @@ export const useMessageRooms = () => {
     fetchRooms();
 
     // 3. リアルタイム更新の設定(テーブルを監視し変化があればfetchRoomsを再実行)
+    // dm_messages の INSERT も監視：トリガー経由の dm_rooms UPDATE が
+    // Realtime に届かない場合があるため、直接 INSERT イベントでも再取得する
     const channel = supabase
       .channel('list_updates_channel')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, () => fetchRooms())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dm_rooms' }, () => fetchRooms())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dm_participants' }, () => fetchRooms())
       .subscribe();

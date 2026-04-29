@@ -1,48 +1,17 @@
 'use client';
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useAuthForm } from '@/hooks/useAuthForm';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const router = useRouter();
-
-  // 新規登録処理
-  const handleSignUp = async () => {
-    if (!displayName) {
-      alert("ユーザー名を入力してください");
-      return;
-    }
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // 💡 ここで user_metadata として保存するのがコツ！
-        data: {
-          display_name: displayName,
-        },
-      },
-    });
-    
-    if (error) alert(error.message);
-    else alert('確認メールを送信しました！メール内のリンクをクリックして登録を完了させてください。');
-  };
-
-  // ログイン処理
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) alert(error.message);
-    else {
-      alert('ログイン成功！');
-      router.push('/'); // ログイン後にリスト画面へ移動
-    }
-  };
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    displayName,
+    setDisplayName,
+    handleSignUp,
+    handleLogin,
+  } = useAuthForm();
 
   return (
     <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-xl text-black border border-gray-100">
