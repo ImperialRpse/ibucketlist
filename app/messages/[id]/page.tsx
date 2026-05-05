@@ -86,13 +86,13 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   const markRead = async () => {
     const { error } = await supabase.rpc('mark_messages_as_read', { target_room_id: roomId });
     if (error) {
-      console.error("既読更新エラー:", error.message);
+      console.error("Read update error:", error.message);
     } else {
-      console.log("既読にしました！ 部屋ID:", roomId);
+      console.log("Marked as read! Room ID:", roomId);
     }
   };
 
-  //メッセージ送信処理関数
+  //メッセージSend処理関数
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !myId) return;
@@ -105,7 +105,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       .insert({ room_id: roomId, sender_id: myId, content });
 
     if (error) return;
-    // 相手に「DM」通知
+    // 相手に「DM」Notifications
     if (partner?.id) {
       await insertNotification(partner.id, myId, 'dm');
     }
@@ -147,7 +147,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
         <div ref={scrollRef} />
       </div>
 
-      {/* 送信フォーム */}
+      {/* Sendフォーム */}
       <form onSubmit={sendMessage} className="p-4 bg-[#121212] border-t border-gray-800">
         <div className="flex gap-2 max-w-4xl mx-auto">
           <input

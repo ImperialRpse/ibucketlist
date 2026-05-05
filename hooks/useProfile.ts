@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { insertNotification } from '@/lib/notifications';
 import { useRouter } from 'next/navigation';
 import { BucketItem, Profile } from '@/types/item';
+import { useBlock } from '@/hooks/useBlock';
 
 type FollowModalType = 'followers' | 'following' | null;
 
@@ -17,7 +18,7 @@ export const useProfile = (profileUserId: string) => {
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [newItem, setNewItem] = useState('');
     const [newItemDescription, setNewItemDescription] = useState('');
-    const [newCategory, setNewCategory] = useState('その他');
+    const [newCategory, setNewCategory] = useState('Others');
     const [selectedItem, setSelectedItem] = useState<BucketItem | null>(null);
     const [reflection, setReflection] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -33,17 +34,20 @@ export const useProfile = (profileUserId: string) => {
     const [followListUsers, setFollowListUsers] = useState<Profile[]>([]);
     const [followListLoading, setFollowListLoading] = useState(false);
 
-    // プライベートアカウント制御用
+    // Private Account制御用
     const [isPrivateRestricted, setIsPrivateRestricted] = useState(false);
     
-    // 編集モーダル用のState
+    // Editモーダル用のState
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<BucketItem | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
-    const [editCategory, setEditCategory] = useState('その他');
+    const [editCategory, setEditCategory] = useState('Others');
 
     const router = useRouter();
+
+    // ブロック機能
+    const { isBlocked, blockLoading, toggleBlock } = useBlock(profileUserId, currentUserId);
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -72,7 +76,7 @@ export const useProfile = (profileUserId: string) => {
                 setProfile(fetchedProfile);
             }
 
-            // プライベートアカウントのアクセス制御
+            // Private Accountのアクセス制御
             const isPrivate = fetchedProfile && fetchedProfile.is_public === false;
             if (isPrivate && !currentIsMe) {
                 // フォロワーかどうか確認
@@ -122,7 +126,7 @@ export const useProfile = (profileUserId: string) => {
 
             setIsFollowing(!!followData);
 
-            // フォローリクエスト送信済みかどうか確認
+            // Follow RequestsSend済みかどうか確認
             const { data: requestData } = await supabase
                 .from('follow_requests')
                 .select('id')
@@ -142,7 +146,7 @@ export const useProfile = (profileUserId: string) => {
 
     const toggleLike = async (e: React.MouseEvent, itemId: string, isLikedByMe: boolean) => {
         e.stopPropagation();
-        if (!currentUserId) return alert('ログインが必要です');
+        if (!currentUserId) return alert('Loginが必要です');
         if (isLikedByMe) {
             await supabase.from('likes').delete().eq('item_id', itemId).eq('user_id', currentUserId);
         } else {
@@ -155,7 +159,7 @@ export const useProfile = (profileUserId: string) => {
 
     const toggleFollow = async () => {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return alert("ログインが必要です");
+        if (!user) return alert("Loginが必要です");
 
         if (isFollowing) {
             // フォロー解除
@@ -166,14 +170,14 @@ export const useProfile = (profileUserId: string) => {
             setIsFollowing(false);
             setFollowerCount(prev => prev - 1);
         } else if (isRequestSent) {
-            // フォローリクエストをキャンセル
+            // Follow RequestsをCancel
             await supabase.from('follow_requests')
                 .delete()
                 .eq('requester_id', user.id)
                 .eq('target_id', profileUserId);
             setIsRequestSent(false);
         } else if (profile?.is_public === false) {
-            // 非公開アカウント → フォローリクエスト送信
+            // 非公開アカウント → Follow RequestsSend
             await supabase.from('follow_requests')
                 .insert({ requester_id: user.id, target_id: profileUserId });
             await insertNotification(profileUserId, user.id, 'follow_request');
@@ -199,7 +203,7 @@ export const useProfile = (profileUserId: string) => {
 
         setNewItem('');
         setNewItemDescription('');
-        setNewCategory('その他');
+        setNewCategory('Others');
         setIsOpen(false);
         fetchAllData();
     };
@@ -213,7 +217,7 @@ export const useProfile = (profileUserId: string) => {
             .eq('id', editingItem.id);
 
         if (error) {
-            alert('更新に失敗しました');
+            alert('Update failed');
             return;
         }
 
@@ -221,7 +225,7 @@ export const useProfile = (profileUserId: string) => {
         setEditingItem(null);
         setEditTitle('');
         setEditDescription('');
-        setEditCategory('その他');
+        setEditCategory('Others');
         fetchAllData();
     };
 
@@ -234,7 +238,7 @@ export const useProfile = (profileUserId: string) => {
             .eq('id', item.id);
 
         if (error) {
-            alert('削除に失敗しました');
+            alert('Deleteに失敗しました');
             return;
         }
 
@@ -290,7 +294,7 @@ export const useProfile = (profileUserId: string) => {
 
     const handleStartMessage = async () => {
         const { data: { user: me } } = await supabase.auth.getUser();
-        if (!me) return alert("ログインが必要です");
+        if (!me) return alert("Loginが必要です");
         if (me.id === profileUserId) return;
 
         setLoading(true);
@@ -341,8 +345,8 @@ export const useProfile = (profileUserId: string) => {
                 router.push(`/messages/${newRoom.id}`);
             }
         } catch (error) {
-            console.error("詳細エラー:", JSON.stringify(error, null, 2), error);
-            alert("メッセージルームの作成に失敗しました");
+            console.error("Detailsエラー:", JSON.stringify(error, null, 2), error);
+            alert("Failed to create message room");
         } finally {
             setLoading(false);
         }
@@ -355,7 +359,7 @@ export const useProfile = (profileUserId: string) => {
 
         try {
             if (type === 'followers') {
-                // Step1: このユーザーをフォローしている人のIDを取得
+                // Step1: このUsersをフォローしている人のIDを取得
                 const { data: followData, error: followError } = await supabase
                     .from('follows')
                     .select('follower_id')
@@ -376,7 +380,7 @@ export const useProfile = (profileUserId: string) => {
                 setFollowListUsers((profileData ?? []) as Profile[]);
 
             } else {
-                // Step1: このユーザーがフォローしている人のIDを取得
+                // Step1: このUsersがフォローしている人のIDを取得
                 const { data: followData, error: followError } = await supabase
                     .from('follows')
                     .select('following_id')
@@ -458,6 +462,9 @@ export const useProfile = (profileUserId: string) => {
         followListUsers,
         followListLoading,
         openFollowModal,
-        closeFollowModal
+        closeFollowModal,
+        isBlocked,
+        blockLoading,
+        toggleBlock
     };
 };

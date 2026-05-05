@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchBlockedUserIds } from '@/hooks/useBlock';
 
 export type Profile = {
   id: string;
@@ -66,14 +67,21 @@ export const useMessageRooms = () => {
       if (error) {
         console.error(error);
       } else {
-        // 3. データを加工：取得した相手の情報に自分の既読時間を追加
+        // 3. データを加工：取得した相手の情報に自分の既読時間をAdd
         const processedData = (data || []).map((item: any) => ({
           ...item,
           my_last_read_at: myReadStatus[item.room_id]
         }));
 
+        // ブロックしたUsersとのルームを除外
+        const blockedIds = await fetchBlockedUserIds(user.id);
+        const filteredData = processedData.filter((item: any) => {
+          const profileId = (item.profiles as any)?.id;
+          return !blockedIds.includes(profileId);
+        });
+
         // 最新メッセージ順にソート
-        const sortedData = processedData.sort((a: any, b: any) => {
+        const sortedData = filteredData.sort((a: any, b: any) => {
           const roomA = Array.isArray(a.dm_rooms) ? a.dm_rooms[0] : a.dm_rooms;
           const roomB = Array.isArray(b.dm_rooms) ? b.dm_rooms[0] : b.dm_rooms;
           return new Date(roomB?.last_message_at || 0).getTime() - new Date(roomA?.last_message_at || 0).getTime();
@@ -95,7 +103,7 @@ export const useMessageRooms = () => {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dm_participants' }, () => fetchRooms())
       .subscribe();
 
-    //画面が閉じられたときにチャンネルを削除
+    //画面が閉じられたときにチャンネルをDelete
     return () => { supabase.removeChannel(channel); };
   }, []);
 

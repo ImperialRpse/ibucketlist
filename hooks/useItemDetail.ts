@@ -73,7 +73,7 @@ export const useItemDetail = (itemId: string) => {
             .order('created_at', { ascending: true });
 
         if (error) {
-            console.error("コメント取得エラー:", error.message);
+            console.error("Comment fetch error:", error.message);
         } else {
             const normalized: Comment[] = (data || []).map((row) => ({
                 ...row,
@@ -146,7 +146,7 @@ export const useItemDetail = (itemId: string) => {
     };
 
     const toggleLike = async () => {
-        if (!currentUserId || !item) return alert("ログインが必要です");
+        if (!currentUserId || !item) return alert("Loginが必要です");
         const isLikedByMe = item.likes?.some((like) => like.user_id === currentUserId);
 
         if (isLikedByMe) {

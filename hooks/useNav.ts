@@ -7,7 +7,7 @@ export const useNav = () => {
     const [userId, setUserId] = useState<string | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    //通知dropdownが開いていればtrue
+    //Notificationsdropdownが開いていればtrue
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +54,7 @@ export const useNav = () => {
     };
 
     useEffect(() => {
-        //通知ドロップダウンの外側をクリックしたときに、ドロップダウンを自動的に閉じる
+        //Notificationsドロップダウンの外側をクリックしたときに、ドロップダウンを自動的にClose
         const handler = (e: MouseEvent) => {
             //DOM要素が作成された後、notifRefの中身がnullから切り替わる
             if (notifRef.current && !notifRef.current.contains(e.target as Node)) {

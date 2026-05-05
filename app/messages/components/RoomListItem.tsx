@@ -44,7 +44,7 @@ export const RoomListItem = ({ item, isActive }: RoomListItemProps) => {
             <span className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
           ) : null}
 
-          {/* 💡 送信時間を表示 */}
+          {/* 💡 Send時間を表示 */}
           {room?.last_message_at && (
             <span className="text-[10px] text-gray-500">
               {new Date(room.last_message_at).toLocaleDateString() === new Date().toLocaleDateString()
@@ -55,7 +55,7 @@ export const RoomListItem = ({ item, isActive }: RoomListItemProps) => {
         </div>
         {/* 💡 最新メッセージのプレビュー */}
         <p className="text-xs text-gray-500 truncate mt-0.5">
-          {room?.last_message_content || 'まだメッセージはありません'}
+          {room?.last_message_content || 'No messages yet'}
         </p>
       </div>
     </Link>

@@ -28,7 +28,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
     } = useItemDetail(itemId);
 
     if (loading) return <div className="p-10 text-center text-white">Loading...</div>;
-    if (!item) return <div className="p-10 text-center text-white">が見つかりませんでした</div>;
+    if (!item) return <div className="p-10 text-center text-white"> not found</div>;
 
     const isLikedByMe = item.likes?.some((like) => like.user_id === currentUserId);
     const likeCount = item.likes?.length || 0;
@@ -39,7 +39,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
             {/* --- 左側：投稿 --- */}
             <div className="flex-1 overflow-y-auto pr-2 pb-4">
                 <button onClick={() => router.back()} className="text-white hover:underline mb-4 font-bold inline-flex items-center gap-2">
-                    <span>←</span> 戻る
+                    <span>←</span> Back
                 </button>
 
                 <div className="p-8 border rounded-3xl shadow-lg bg-white text-black border-gray-200">
@@ -54,7 +54,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
                             )}
                         </div>
                         <p className="text-base font-bold text-blue-600 hover:underline cursor-pointer">
-                            {item.profiles?.display_name || '名無しのユーザー'}
+                            {item.profiles?.display_name || 'Anonymous User'}
                         </p>
                     </Link>
 
@@ -106,7 +106,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
                 <div className="flex-1 overflow-y-auto px-5 py-2 bg-white divide-y divide-gray-50">
                     {comments.length === 0 ? (
                         <div className="h-full flex items-center justify-center">
-                            <p className="text-center text-gray-400">最初のコメントを書きましょう！</p>
+                            <p className="text-center text-gray-400">Be the first to comment!</p>
                         </div>
                     ) : (
                         comments.map((c) => (
@@ -131,7 +131,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            placeholder="コメントを入力..."
+                            placeholder="Enter comment..."
                             className="flex-1 border rounded-full px-5 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-black bg-white shadow-sm transition-all"
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
@@ -141,7 +141,7 @@ export default function ItemDetail({ params }: { params: Promise<{ id: string }>
                             onClick={handleAddComment}
                             className="bg-blue-500 text-white font-bold px-6 rounded-full hover:bg-blue-600 transition-colors shadow-sm"
                         >
-                            送信
+                            Send
                         </button>
                     </div>
                 </div>

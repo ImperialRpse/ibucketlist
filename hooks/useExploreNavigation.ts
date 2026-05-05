@@ -26,7 +26,7 @@ export const useExploreNavigation = () => {
     const params = new URLSearchParams(searchParams.toString());
     if (searchInput.trim()) {
       params.set('q', searchInput.trim());
-      params.delete('category'); // キーワード検索時はカテゴリ絞り込みを解除
+      params.delete('category'); // キーワードSearch時はカテゴリ絞り込みを解除
     } else {
       params.delete('q');
     }
@@ -42,7 +42,7 @@ export const useExploreNavigation = () => {
   const handleCategoryClick = (catName: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('category', catName);
-    params.delete('q'); // カテゴリ検索時はキーワード検索を解除
+    params.delete('q'); // カテゴリSearch時はキーワードSearchを解除
     setSearchInput('');
     router.push(`/explore?${params.toString()}`);
   };

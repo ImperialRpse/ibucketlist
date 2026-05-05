@@ -37,7 +37,7 @@ export function FollowListModal({ isOpen, onClose, title, users, loading }: Foll
           </button>
         </div>
 
-        {/* ユーザーリスト */}
+        {/* Usersリスト */}
         <div className="max-h-[60vh] overflow-y-auto divide-y divide-white/5">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -45,7 +45,7 @@ export function FollowListModal({ isOpen, onClose, title, users, loading }: Foll
             </div>
           ) : users.length === 0 ? (
             <div className="py-12 text-center text-gray-500 text-sm">
-              まだいません
+              No one yet
             </div>
           ) : (
             users.map((user) => (
@@ -68,10 +68,10 @@ export function FollowListModal({ isOpen, onClose, title, users, loading }: Foll
                   </div>
                 </div>
 
-                {/* ユーザー名 */}
+                {/* Users名 */}
                 <div className="min-w-0 flex-1">
                   <p className="text-white font-medium text-sm truncate group-hover:text-blue-400 transition-colors">
-                    {user.display_name || 'ユーザー'}
+                    {user.display_name || 'User'}
                   </p>
                   {user.bio && (
                     <p className="text-gray-500 text-xs truncate mt-0.5">{user.bio}</p>

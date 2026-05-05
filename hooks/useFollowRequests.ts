@@ -17,7 +17,7 @@ export const useFollowRequests = () => {
         }
         setCurrentUserId(user.id);
 
-        // Step1: フォローリクエスト一覧を取得
+        // Step1: Follow Requests一覧を取得
         const { data: requestData, error } = await supabase
             .from('follow_requests')
             .select('id, requester_id, target_id, created_at')
@@ -36,7 +36,7 @@ export const useFollowRequests = () => {
             return;
         }
 
-        // Step2: リクエスト送信者のプロフィールをまとめて取得
+        // Step2: リクエストSend者のプロフィールをまとめて取得
         const requesterIds = requestData.map((r) => r.requester_id);
         const { data: profilesData } = await supabase
             .from('profiles')
@@ -58,7 +58,7 @@ export const useFollowRequests = () => {
         fetchRequests();
     }, [fetchRequests]);
 
-    // フォローリクエストを承認する
+    // Follow RequestsをApproveする
     const approveRequest = async (requestId: string, requesterId: string) => {
         if (!currentUserId) return;
 
@@ -83,14 +83,14 @@ export const useFollowRequests = () => {
             return;
         }
 
-        // 3. 承認通知を送信
+        // 3. ApproveNotificationsをSend
         await insertNotification(requesterId, currentUserId, 'follow_request_approved');
 
         // リストを更新
         await fetchRequests();
     };
 
-    // フォローリクエストを拒否する
+    // Follow RequestsをDeclineする
     const rejectRequest = async (requestId: string) => {
         const { error } = await supabase
             .from('follow_requests')

@@ -18,7 +18,7 @@ export const useExplore = (searchQuery: string, category: string, tab: 'items' |
     setHasMore(true);
 
     try {
-      // items tab の場合は検索語かカテゴリをキーワードとして扱う
+      // items tab の場合はSearch語かカテゴリをキーワードとして扱う
       if (tab === 'items') {
         const rpcQuery = searchQuery || category || '';
 
@@ -47,7 +47,7 @@ export const useExplore = (searchQuery: string, category: string, tab: 'items' |
         setItems((filteredData as BucketItem[]) || []);
         setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
       } 
-      // users tab の場合は検索語のみをキーワードとする
+      // users tab の場合はSearch語のみをキーワードとする
       else if (tab === 'users') {
         const { data, error } = await supabase.rpc('search_profiles', {
           search_term: searchQuery || '',

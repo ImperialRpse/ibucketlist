@@ -11,7 +11,7 @@ export const useAuthForm = () => {
   // 新規登録処理
   const handleSignUp = async () => {
     if (!displayName) {
-      alert("ユーザー名を入力してください");
+      alert("Users名を入力してください");
       return;
     }
 
@@ -30,7 +30,7 @@ export const useAuthForm = () => {
       return;
     }
 
-    // メール確認が不要な場合（即時ログイン）はここでprofilesにupsert
+    // メール確認が不要な場合（即時Login）はここでprofilesにupsert
     if (data.user) {
       const { error: profileError } = await supabase
         .from('profiles')
@@ -40,14 +40,14 @@ export const useAuthForm = () => {
         });
 
       if (profileError) {
-        console.error('プロフィール保存エラー:', profileError.message);
+        console.error('プロフィールSaveエラー:', profileError.message);
       }
     }
 
-    alert('確認メールを送信しました！メール内のリンクをクリックして登録を完了させてください。');
+    alert('確認メールをSendしました！メール内のリンクをクリックして登録を完了させてください。');
   };
 
-  // ログイン処理
+  // Login処理
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -55,8 +55,8 @@ export const useAuthForm = () => {
     });
     if (error) alert(error.message);
     else {
-      alert('ログイン成功！');
-      router.push('/'); // ログイン後にリスト画面へ移動
+      alert('Login成功！');
+      router.push('/'); // Login後にリスト画面へ移動
     }
   };
 

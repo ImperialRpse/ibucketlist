@@ -4,24 +4,24 @@ import { GoogleGenAI } from '@google/genai';
 import { CATEGORIES } from '@/lib/constants';
 
 export async function suggestCategory(text: string): Promise<string> {
-  if (!text) return "その他";
+  if (!text) return "Others";
   
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `あなたはバケットリスト（やりたいことリスト）の分類アシスタントです。
-以下のユーザーの入力内容を分析し、最も適したカテゴリーを1つだけ出力してください。
+以下のUsersの入力内容を分析し、最も適したCategoryを1つだけ出力してください。
 
-【カテゴリーリスト】
+【Categoryリスト】
 ${CATEGORIES.map(c => `- ${c}`).join('\n')}
 
 【入力内容】
 ${text}
 
 【ルール】
-- 理由や解説は一切不要です。カテゴリー名のみを直接出力してください。
-- 該当するものがない場合や判断できない場合は「その他」を出力してください。
+- 理由や解説は一切不要です。Category名のみを直接出力してください。
+- 該当するものがない場合や判断できない場合は「Others」を出力してください。
 - 出力は必ず上記のリストにある文字列と完全に一致させてください。`
     });
 
@@ -33,11 +33,11 @@ ${text}
     if (matchedCategory) {
       return matchedCategory;
     } else {
-      console.warn("AIがカテゴリーを特定できませんでした。出力内容:", responseText);
-      return "その他";
+      console.warn("AI failed to categorize. Output:", responseText);
+      return "Others";
     }
   } catch (error) {
     console.error("AI Category Suggestion Error:", error);
-    return "その他";
+    return "Others";
   }
 }

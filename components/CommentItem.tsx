@@ -57,7 +57,7 @@ export const CommentItem = ({
                         href={`/profile/${comment.user_id}`}
                         className="text-xs font-bold text-blue-600 hover:underline inline-block w-fit"
                     >
-                        {comment.profiles?.display_name || 'ユーザー名'}
+                        {comment.profiles?.display_name || 'Username'}
                     </Link>
 
                     <span className="text-sm text-gray-800 leading-relaxed mt-0.5 break-words">
@@ -78,7 +78,7 @@ export const CommentItem = ({
                                 }}
                                 className={`text-xs font-semibold transition-colors ${isTargetOfReplyInput ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'}`}
                             >
-                                {isTargetOfReplyInput ? 'キャンセル' : '返信'}
+                                {isTargetOfReplyInput ? 'Cancel' : 'Reply'}
                             </button>
                         )}
 
@@ -87,7 +87,7 @@ export const CommentItem = ({
                                 onClick={() => toggleReplies(comment.id)}
                                 className="text-xs text-blue-400 hover:text-blue-600 font-semibold transition-colors"
                             >
-                                {isExpanded ? '▲ 返信を隠す' : `▼ 返信 ${comment.replies!.length}件を表示`}
+                                {isExpanded ? '▲ Hide replies' : `▼ Show ${comment.replies!.length} replies`}
                             </button>
                         )}
                     </div>
@@ -96,7 +96,7 @@ export const CommentItem = ({
                         <div className="mt-2 flex gap-2 items-center">
                             <input
                                 type="text"
-                                placeholder={`${comment.profiles?.display_name || 'ユーザー'}への返信...`}
+                                placeholder={`Reply to ${comment.profiles?.display_name || 'User'}...`}
                                 className="flex-1 border border-blue-200 rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 text-black bg-blue-50"
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}
@@ -107,7 +107,7 @@ export const CommentItem = ({
                                 onClick={handleAddReply}
                                 className="text-blue-500 font-bold text-sm px-2 hover:text-blue-700 transition-colors"
                             >
-                                送信
+                                Send
                             </button>
                         </div>
                     )}

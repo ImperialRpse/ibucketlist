@@ -35,11 +35,11 @@ export function FollowRequestsModal({ isOpen, onClose }: Props) {
             >
                 {/* ヘッダー */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                    <h2 className="font-bold text-gray-900 text-base">フォローリクエスト</h2>
+                    <h2 className="font-bold text-gray-900 text-base">Follow Requests</h2>
                     <button
                         onClick={onClose}
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-                        aria-label="閉じる"
+                        aria-label="Close"
                     >
                         ✕
                     </button>
@@ -54,7 +54,7 @@ export function FollowRequestsModal({ isOpen, onClose }: Props) {
                     ) : requests.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 text-sm">
                             <p className="text-3xl mb-3">📭</p>
-                            <p>フォローリクエストはありません</p>
+                            <p>No follow requests</p>
                         </div>
                     ) : (
                         requests.map((req) => (
@@ -62,7 +62,7 @@ export function FollowRequestsModal({ isOpen, onClose }: Props) {
                                 <RequesterAvatar profile={req.profiles} />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-gray-900 text-sm truncate">
-                                        {req.profiles?.display_name || 'ユーザー'}
+                                        {req.profiles?.display_name || 'User'}
                                     </p>
                                     {req.profiles?.bio && (
                                         <p className="text-xs text-gray-500 truncate">{req.profiles.bio}</p>
@@ -74,14 +74,14 @@ export function FollowRequestsModal({ isOpen, onClose }: Props) {
                                         onClick={() => approveRequest(req.id, req.requester_id)}
                                         className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors"
                                     >
-                                        承認
+                                        Approve
                                     </button>
                                     <button
                                         id={`reject-${req.id}`}
                                         onClick={() => rejectRequest(req.id)}
                                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-1.5 px-3 rounded-lg transition-colors"
                                     >
-                                        拒否
+                                        Decline
                                     </button>
                                 </div>
                             </div>

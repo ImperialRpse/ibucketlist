@@ -11,7 +11,7 @@ export function SearchBar({ value, onChange, onSubmit }: Props) {
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="投稿のタイトル、カテゴリー、またはユーザー名を検索..."
+        placeholder="Search by title, category, or user..."
         className="w-full p-4 pl-12 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
       />
       <svg
@@ -24,7 +24,7 @@ export function SearchBar({ value, onChange, onSubmit }: Props) {
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
       </svg>
-      <button type="submit" className="hidden">検索</button>
+      <button type="submit" className="hidden">Search</button>
     </form>
   );
 }

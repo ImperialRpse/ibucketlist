@@ -8,7 +8,7 @@ export const metadata = {
 export default function ExplorePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <Suspense fallback={<div className="text-center py-10 text-gray-500">読み込み中...</div>}>
+      <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading...</div>}>
         <ExploreContent />
       </Suspense>
     </div>

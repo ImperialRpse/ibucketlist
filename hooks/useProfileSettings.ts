@@ -64,7 +64,7 @@ export const useProfileSettings = () => {
                 await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
             }
 
-            alert('アイコンを更新しました！');
+            alert('Icon updated!');
         } catch (error: unknown) {
             if (error instanceof Error) {
                 alert(error.message);
@@ -92,10 +92,10 @@ export const useProfileSettings = () => {
         });
 
         if (error) {
-            alert('保存に失敗しました');
+            alert('Saveに失敗しました');
         } else {
-            alert('保存しました！');
-            // 保存後に自身のプロフィールページに遷移するように修正
+            alert('Saveしました！');
+            // Save後に自身のプロフィールページに遷移するように修正
             router.push(`/profile/${userId}`);
             router.refresh();
         }
@@ -105,7 +105,7 @@ export const useProfileSettings = () => {
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
-            alert('ログアウトに失敗しました');
+            alert('Logoutに失敗しました');
         } else {
             router.push('/');
             router.refresh();

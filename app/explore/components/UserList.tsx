@@ -9,7 +9,7 @@ function UserAvatar({ profile }: { profile: Profile }) {
   return (
     <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-yellow-400 to-fuchsia-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
       {profile.avatar_url ? (
-        <img src={profile.avatar_url} alt={profile.display_name || 'ユーザー'} className="w-full h-full object-cover" />
+        <img src={profile.avatar_url} alt={profile.display_name || 'Users'} className="w-full h-full object-cover" />
       ) : (
         <span>{(profile.display_name || 'U').charAt(0).toUpperCase()}</span>
       )}
@@ -19,7 +19,7 @@ function UserAvatar({ profile }: { profile: Profile }) {
 
 export function UserList({ profiles }: Props) {
   if (profiles.length === 0) {
-    return <div className="text-center py-10 text-gray-500">検索結果はありません</div>;
+    return <div className="text-center py-10 text-gray-500">No results found</div>;
   }
 
   return (
@@ -33,7 +33,7 @@ export function UserList({ profiles }: Props) {
           <UserAvatar profile={profile} />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900 truncate">{profile.display_name}</p>
-            <p className="text-xs text-gray-500 truncate">{profile.bio || '自己紹介はありません'}</p>
+            <p className="text-xs text-gray-500 truncate">{profile.bio || 'No bio'}</p>
           </div>
         </Link>
       ))}

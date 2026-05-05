@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { insertNotification } from '@/lib/notifications';
 import { BucketItem } from '@/types/item';
+import { fetchBlockedUserIds } from '@/hooks/useBlock';
 
 export type TimelineTab = 'all' | 'following';
 
@@ -26,8 +27,12 @@ export const useTimeline = () => {
         if (error) {
             console.error("Fetch Error:", error.message);
         } else if (data) {
-            const filteredData = data.filter((item: any) => 
-                item.profiles?.is_public !== false || item.user_id === userId
+            // ブロックしたUsersのIDを取得
+            const blockedIds = userId ? await fetchBlockedUserIds(userId) : [];
+
+            const filteredData = data.filter((item: any) =>
+                (item.profiles?.is_public !== false || item.user_id === userId)
+                && !blockedIds.includes(item.user_id)
             );
             setItems(filteredData as BucketItem[]);
         }
@@ -37,7 +42,7 @@ export const useTimeline = () => {
     const fetchFollowingItems = useCallback(async (userId: string) => {
         setLoading(true);
 
-        // 自分がフォローしているユーザーのIDを取得
+        // 自分がフォローしているUsersのIDを取得
         const { data: followData, error: followError } = await supabase
             .from('follows')
             .select('following_id')
@@ -71,7 +76,12 @@ export const useTimeline = () => {
         if (error) {
             console.error("Following Items Fetch Error:", error.message);
         } else if (data) {
-            setItems(data as BucketItem[]);
+            // ブロックしたUsersの投稿を除外
+            const blockedIds = await fetchBlockedUserIds(userId);
+            const filteredData = (data as BucketItem[]).filter(
+                (item) => !blockedIds.includes(item.user_id)
+            );
+            setItems(filteredData);
         }
         setLoading(false);
     }, []);
@@ -97,7 +107,7 @@ export const useTimeline = () => {
 
     const toggleLike = async (e: React.MouseEvent, itemId: string, isLikedByMe: boolean) => {
         e.stopPropagation();
-        if (!currentUserId) return alert("ログインが必要です");
+        if (!currentUserId) return alert("Loginが必要です");
 
         if (isLikedByMe) {
             await supabase.from('likes').delete().eq('item_id', itemId).eq('user_id', currentUserId);

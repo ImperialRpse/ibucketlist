@@ -7,7 +7,7 @@ type Props = {
 
 export function ItemList({ items }: Props) {
   if (items.length === 0) {
-    return <div className="text-center py-10 text-gray-500">検索結果はありません</div>;
+    return <div className="text-center py-10 text-gray-500">No results found</div>;
   }
 
   return (

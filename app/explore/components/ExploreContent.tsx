@@ -29,19 +29,19 @@ export default function ExploreContent() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">Explore</h1>
 
-      {/* ── 検索バー ── */}
+      {/* ── Searchバー ── */}
       <SearchBar value={searchInput} onChange={setSearchInput} onSubmit={handleSearch} />
 
-      {/* ── カテゴリフィルター（キーワード検索中は非表示） ── */}
+      {/* ── カテゴリフィルター（キーワードSearch中は非表示） ── */}
       {!query && (
         <CategoryFilter activeCategory={category} onCategoryClick={handleCategoryClick} />
       )}
 
-      {/* ── 検索結果エリア ── */}
+      {/* ── Search結果エリア ── */}
       <div className="mt-8">
         {(query || category) && (
           <p className="text-gray-600 mb-4 font-medium">
-            {query ? `「${query}」の検索結果` : `カテゴリ「${category}」の検索結果`}
+            {query ? `Search results for "${query}"` : `Search results for category "${category}"`}
           </p>
         )}
 

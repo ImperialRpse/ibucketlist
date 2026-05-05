@@ -6,18 +6,18 @@ export type NotificationDropdownProps = {
     markAllRead: () => void;
 };
 
-// 通知ごとのメッセージを返す
+// Get message for each notification
 const notifLabel = (n: Notification): string => {
-    const name = n.actor?.display_name || 'ユーザー';
+    const name = n.actor?.display_name || 'User';
     switch (n.type) {
-        case 'like': return `${name} があなたの投稿にいいねしました`;
-        case 'comment': return `${name} があなたの投稿にコメントしました`;
-        case 'reply': return `${name} があなたのコメントに返信しました`;
-        case 'follow': return `${name} があなたをフォローしました`;
-        case 'follow_request': return `${name} がフォローリクエストを送りました`;
-        case 'follow_request_approved': return `${name} があなたのフォローリクエストを承認しました`;
-        case 'dm': return `${name} からメッセージが届きました`;
-        default: return '新しい通知があります';
+        case 'like': return `${name} liked your post`;
+        case 'comment': return `${name} commented on your post`;
+        case 'reply': return `${name} replied to your comment`;
+        case 'follow': return `${name} started following you`;
+        case 'follow_request': return `${name} sent you a follow request`;
+        case 'follow_request_approved': return `${name} approved your follow request`;
+        case 'dm': return `${name} sent you a message`;
+        default: return 'You have new notifications';
     }
 };
 
@@ -29,20 +29,20 @@ export const NotificationDropdown = ({
     return (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2 duration-150">
             <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
-                <span className="font-bold text-gray-800 text-sm">通知</span>
+                <span className="font-bold text-gray-800 text-sm">Notifications</span>
                 {unreadCount > 0 && (
                     <button
                         onClick={markAllRead}
                         className="text-xs text-blue-500 hover:underline font-semibold"
                     >
-                        すべて既読
+                        Mark all as read
                     </button>
                 )}
             </div>
 
             <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-50">
                 {notifications.length === 0 ? (
-                    <p className="text-center text-gray-400 text-sm py-10">通知はありません</p>
+                    <p className="text-center text-gray-400 text-sm py-10">No notifications</p>
                 ) : (
                     notifications.map((n) => (
                         <div
@@ -64,7 +64,7 @@ export const NotificationDropdown = ({
                                     {notifLabel(n)}
                                 </p>
                                 <p className="text-[10px] text-gray-400 mt-0.5">
-                                    {new Date(n.created_at).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(n.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
 

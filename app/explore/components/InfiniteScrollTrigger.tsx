@@ -30,7 +30,7 @@ export function InfiniteScrollTrigger({ hasMore, loading, loadingMore, onLoadMor
     <div ref={observerTarget} className="py-6 flex justify-center">
       {loadingMore && <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />}
       {!hasMore && !loading && (
-        <span className="text-sm text-gray-400">すべての結果を表示しました</span>
+        <span className="text-sm text-gray-400">All results are displayed</span>
       )}
     </div>
   );

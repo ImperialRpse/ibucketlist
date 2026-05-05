@@ -27,7 +27,19 @@ export default function Nav() {
       <div className="flex items-center gap-4">
         {userId ? (
           <>
-            {/* ── ベルアイコン（通知） ── */}
+            {/* ── ホームアイコン ── */}
+            <Link
+              href="/"
+              className={`p-2 rounded-full transition-all hover:bg-gray-100 ${
+                pathname === '/' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+            </Link>
+
+            {/* ── ベルアイコン（Notifications） ── */}
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => {
@@ -51,7 +63,7 @@ export default function Nav() {
                 )}
               </button>
 
-              {/* ── 通知ドロップダウン ── */}
+              {/* ── Notificationsドロップダウン ── */}
               {isNotifOpen && (
                 <NotificationDropdown
                   notifications={notifications}
@@ -61,7 +73,7 @@ export default function Nav() {
               )}
             </div>
 
-            {/* ── 検索（Explore）アイコン ── */}
+            {/* ── Search（Explore）アイコン ── */}
             <Link
               href="/explore"
               className={`p-2 rounded-full transition-all hover:bg-gray-100 ${
@@ -98,7 +110,7 @@ export default function Nav() {
           </>
         ) : (
           <Link href="/login" className="text-blue-500 font-bold hover:underline transition-all">
-            ログイン
+            Login
           </Link>
         )}
       </div>

@@ -36,8 +36,8 @@ export default function TimelinePage() {
         <div className="p-10 text-center text-white">Loading...</div>
       ) : items.length === 0 && activeTab === 'following' ? (
         <div className="p-10 text-center text-white/60">
-          <p className="text-lg">フォロー中のユーザーの投稿がありません</p>
-          <p className="text-sm mt-2">他のユーザーをフォローしてみましょう</p>
+          <p className="text-lg">No posts from users you follow</p>
+          <p className="text-sm mt-2">Let's follow other users</p>
         </div>
       ) : (
         <div className="grid gap-4">

@@ -8,7 +8,7 @@ export default function MessagesStartPage() {
         </div>
         <h2 className="text-xl font-bold text-white mb-2">Your Messages</h2>
         <p className="text-gray-500 max-w-[240px] text-sm leading-relaxed">
-          左側のリストから会話を選択してチャットを開始してください。
+          Select a conversation from the list to start chatting.
         </p>
       </div>
     );

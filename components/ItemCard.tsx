@@ -80,7 +80,7 @@ export const ItemCard = ({
                     <span className={`text-sm md:text-base font-bold hover:underline 
                         ${isProfileView ? 'text-gray-200' : 'text-blue-600'}
                     `}>
-                        {item.profiles?.display_name || '名無しのユーザー'}
+                        {item.profiles?.display_name || 'Anonymous User'}
                     </span>
                 </Link>
             </div>
@@ -103,7 +103,7 @@ export const ItemCard = ({
                 </div>
 
                 <div className="flex items-center gap-2 ml-2 shrink-0">
-                    {/* 自分のプロフィールの場合だけメニューボタン・チェックボタンを表示 */}
+                    {/* 自分のプロフィールの場合だけMenuボタン・チェックボタンを表示 */}
                     {isProfileView && isMe && (
                         <>
                             {!item.is_completed && onCompleteClick && (
@@ -113,7 +113,7 @@ export const ItemCard = ({
                                         onCompleteClick(item);
                                     }}
                                     className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50/10 transition-colors"
-                                    aria-label="完了にする"
+                                    aria-label="Complete"
                                 />
                             )}
                             {(onEditClick || onDeleteClick) && (
@@ -124,7 +124,7 @@ export const ItemCard = ({
                                             setIsMenuOpen(!isMenuOpen);
                                         }}
                                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700/50 text-gray-400 transition-colors"
-                                        aria-label="メニュー"
+                                        aria-label="Menu"
                                     >
                                         ⋮
                                     </button>
@@ -139,7 +139,7 @@ export const ItemCard = ({
                                                     }}
                                                     className="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-white/10 transition-colors"
                                                 >
-                                                    編集
+                                                    Edit
                                                 </button>
                                             )}
                                             {onDeleteClick && (
@@ -147,13 +147,13 @@ export const ItemCard = ({
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setIsMenuOpen(false);
-                                                        if (window.confirm('本当にこの投稿を削除しますか？')) {
+                                                        if (window.confirm('Are you sure you want to delete this post?')) {
                                                             onDeleteClick(item);
                                                         }
                                                     }}
                                                     className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition-colors border-t border-gray-700"
                                                 >
-                                                    削除
+                                                    Delete
                                                 </button>
                                             )}
                                         </div>
@@ -179,7 +179,7 @@ export const ItemCard = ({
                     {item.image_url && (
                         <img
                             src={item.image_url}
-                            alt="思い出"
+                            alt="Memories"
                             className={`w-full max-h-96 object-contain rounded-2xl shadow-sm 
                                 ${isProfileView ? 'bg-black/20' : 'border border-gray-50'}
                             `}

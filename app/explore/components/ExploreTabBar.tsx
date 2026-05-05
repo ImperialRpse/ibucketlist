@@ -7,7 +7,7 @@ type Props = {
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'items', label: 'Bucket Items' },
-  { value: 'users', label: 'ユーザー' },
+  { value: 'users', label: 'Users' },
 ];
 
 export function ExploreTabBar({ activeTab, onTabChange }: Props) {
