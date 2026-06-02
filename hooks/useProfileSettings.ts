@@ -92,11 +92,11 @@ export const useProfileSettings = () => {
         });
 
         if (error) {
-            alert('Saveに失敗しました');
+            alert('Failed to save');
         } else {
-            alert('Saveしました！');
+            alert('Saved successfully!');
             // Save後に自身のプロフィールページに遷移するように修正
-            router.push(`/profile/${userId}`);
+            router.push(`/profile?id=${userId}`);
             router.refresh();
         }
         setSaving(false);
@@ -105,7 +105,7 @@ export const useProfileSettings = () => {
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
-            alert('Logoutに失敗しました');
+            alert('Failed to logout');
         } else {
             router.push('/');
             router.refresh();

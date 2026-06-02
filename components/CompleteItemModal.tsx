@@ -31,7 +31,7 @@ export const CompleteItemModal = ({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl relative animate-in zoom-in duration-200 text-black">
                 <h2 className="text-2xl font-bold mb-1 text-center text-gray-800">Congratulations! 🎉</h2>
-                <p className="text-blue-600 font-semibold text-center mb-6 text-sm">「{selectedItem?.title}」</p>
+                <p className="text-blue-600 font-semibold text-center mb-6 text-sm">&quot;{selectedItem?.title}&quot;</p>
 
                 <div className="space-y-4">
                     <div>

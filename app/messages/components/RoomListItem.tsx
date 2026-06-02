@@ -17,13 +17,13 @@ export const RoomListItem = ({ item, isActive }: RoomListItemProps) => {
 
   return (
     <Link
-      href={`/messages/${item.room_id}`}
-      className={`flex items-center gap-3 p-4 transition-colors border-b border-gray-800/50 last:border-b-0 ${isActive
-        ? 'bg-[#2a2a2a] border-l-4 border-l-blue-500'
-        : 'hover:bg-[#222222]'
+      href={`/messages?id=${item.room_id}`}
+      className={`flex items-center gap-3 p-4 transition-colors border-b border-gray-200 last:border-b-0 ${isActive
+        ? 'bg-blue-50 border-l-4 border-l-blue-500'
+        : 'hover:bg-gray-100'
         }`}
     >
-      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-800 flex-shrink-0 border border-gray-700">
+      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
         {/* アイコンを表示　なければ名前の頭文字*/}
         {item.profiles?.avatar_url ? (
           <img src={item.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
@@ -37,7 +37,7 @@ export const RoomListItem = ({ item, isActive }: RoomListItemProps) => {
       {/* 名前と最新メッセージの表示*/}
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline">
-          <div className="font-bold truncate text-gray-100">{item.profiles?.display_name}</div>
+          <div className="font-bold truncate text-gray-900">{item.profiles?.display_name}</div>
 
           {/* 💡 未読バッジ（青い丸）の表示判定 */}
           {isUnread ? (

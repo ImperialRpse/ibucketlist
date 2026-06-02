@@ -51,7 +51,7 @@ export function FollowListModal({ isOpen, onClose, title, users, loading }: Foll
             users.map((user) => (
               <Link
                 key={user.id}
-                href={`/profile/${user.id}`}
+                href={`/profile?id=${user.id}`}
                 onClick={onClose}
                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/5 transition-colors group"
               >

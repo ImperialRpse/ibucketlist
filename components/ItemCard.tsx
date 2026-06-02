@@ -53,33 +53,27 @@ export const ItemCard = ({
 
     return (
         <div
-            onClick={() => router.push(`/item/${item.id}`)}
+            onClick={() => router.push(`/item?id=${item.id}`)}
             className={`p-5 md:p-6 border rounded-3xl shadow-sm cursor-pointer transition-all 
-                ${isProfileView
-                    ? item.is_completed
-                        ? 'border-green-100 bg-green-50/10 hover:bg-green-50/20' // プロフィールでの完了状態
-                        : 'border-gray-800 bg-[#1e1e1e] hover:bg-gray-800' // プロフィールでの未完了状態 (ダークモード風)
-                    : 'bg-white text-black border-gray-200 hover:bg-gray-50' // タイムラインでの状態 (ライトモード風)
+                ${isProfileView && item.is_completed
+                    ? 'border-green-200 bg-green-50/40 hover:bg-green-50/60'
+                    : 'bg-white text-black border-gray-200 hover:bg-gray-50'
                 }
             `}
         >
             {/* 投稿者情報エリア */}
             <div onClick={(e) => e.stopPropagation()} className="w-fit">
-                <Link href={`/profile/${item.user_id}`} className="flex items-center gap-2 md:gap-3 mb-3">
-                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 border flex items-center justify-center 
-                        ${isProfileView ? 'bg-gray-700 border-gray-600' : 'bg-gray-200 border-transparent'}
-                    `}>
+                <Link href={`/profile?id=${item.user_id}`} className="flex items-center gap-2 md:gap-3 mb-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 border flex items-center justify-center bg-gray-100 border-gray-200">
                         {item.profiles?.avatar_url ? (
                             <img src={item.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                            <span className={`font-bold text-sm ${isProfileView ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <span className="font-bold text-sm text-gray-500">
                                 {item.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
                             </span>
                         )}
                     </div>
-                    <span className={`text-sm md:text-base font-bold hover:underline 
-                        ${isProfileView ? 'text-gray-200' : 'text-blue-600'}
-                    `}>
+                    <span className="text-sm md:text-base font-bold hover:underline text-blue-600">
                         {item.profiles?.display_name || 'Anonymous User'}
                     </span>
                 </Link>
@@ -88,15 +82,12 @@ export const ItemCard = ({
             <div className="flex justify-between items-start mb-2 mt-2">
                 <div className="flex flex-col">
                     {item.category && (
-                        <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded w-fit mb-1 border border-blue-500/20">
+                        <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded w-fit mb-1 border border-blue-100">
                             {item.category}
                         </span>
                     )}
                     <span className={`text-lg md:text-xl font-semibold 
-                        ${isProfileView
-                            ? item.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'
-                            : 'text-gray-800'
-                        }
+                        ${item.is_completed ? 'text-gray-400 line-through' : 'text-gray-800'}
                     `}>
                         {item.title}
                     </span>
@@ -112,7 +103,7 @@ export const ItemCard = ({
                                         e.stopPropagation();
                                         onCompleteClick(item);
                                     }}
-                                    className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50/10 transition-colors"
+                                    className="w-6 h-6 border-2 border-blue-500 rounded-md flex items-center justify-center hover:bg-blue-50 transition-colors"
                                     aria-label="Complete"
                                 />
                             )}
@@ -123,13 +114,13 @@ export const ItemCard = ({
                                             e.stopPropagation();
                                             setIsMenuOpen(!isMenuOpen);
                                         }}
-                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700/50 text-gray-400 transition-colors"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
                                         aria-label="Menu"
                                     >
                                         ⋮
                                     </button>
                                     {isMenuOpen && (
-                                        <div className="absolute right-0 mt-1 w-32 bg-[#2a2a2a] border border-gray-700 rounded-xl shadow-xl z-20 overflow-hidden text-left">
+                                        <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden text-left">
                                             {onEditClick && (
                                                 <button
                                                     onClick={(e) => {
@@ -137,7 +128,7 @@ export const ItemCard = ({
                                                         setIsMenuOpen(false);
                                                         onEditClick(item);
                                                     }}
-                                                    className="w-full text-left px-4 py-3 text-sm text-gray-200 hover:bg-white/10 transition-colors"
+                                                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                                 >
                                                     Edit
                                                 </button>
@@ -151,7 +142,7 @@ export const ItemCard = ({
                                                             onDeleteClick(item);
                                                         }
                                                     }}
-                                                    className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-white/10 transition-colors border-t border-gray-700"
+                                                    className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-gray-100"
                                                 >
                                                     Delete
                                                 </button>
@@ -167,9 +158,7 @@ export const ItemCard = ({
             </div>
 
             {item.description && (
-                <p className={`text-sm mb-3 md:mb-4 whitespace-pre-wrap 
-                    ${isProfileView ? 'text-gray-400' : 'text-gray-600'}
-                `}>
+                <p className="text-sm mb-3 md:mb-4 whitespace-pre-wrap text-gray-600">
                     {item.description}
                 </p>
             )}
@@ -180,15 +169,13 @@ export const ItemCard = ({
                         <img
                             src={item.image_url}
                             alt="Memories"
-                            className={`w-full max-h-96 object-contain rounded-2xl shadow-sm 
-                                ${isProfileView ? 'bg-black/20' : 'border border-gray-50'}
-                            `}
+                            className="w-full max-h-96 object-contain rounded-2xl shadow-sm border border-gray-100"
                         />
                     )}
                     {item.reflection && (
                         <p className={`text-sm p-3 md:p-4 rounded-xl md:rounded-2xl italic 
                             ${isProfileView
-                                ? 'text-gray-300 bg-black/20 border border-green-900/30'
+                                ? 'text-gray-700 bg-green-50/50 border border-green-100/50'
                                 : 'text-gray-600 bg-gray-50'
                             }
                         `}>
@@ -199,46 +186,33 @@ export const ItemCard = ({
             )}
 
             {/* ライク・コメントボタン */}
-            <div className={`flex justify-between items-center border-t mt-4 pt-4 
-                ${isProfileView ? 'border-gray-700' : 'border-gray-100'}
-            `}>
+            <div className="flex justify-between items-center border-t mt-4 pt-4 border-gray-100">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-1">
                         <button
                             onClick={(e) => toggleLike(e, item.id, isLikedByMe)}
                             className={`text-2xl transition-all active:scale-150 
-                                ${isLikedByMe
-                                    ? 'text-pink-500'
-                                    : isProfileView ? 'text-gray-400 hover:text-gray-300' : 'text-gray-300 hover:text-pink-400'
-                                }
+                                ${isLikedByMe ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}
                             `}
                         >
                             {isLikedByMe ? '❤️' : '♡'}
                         </button>
-                        <span className={`font-bold text-sm 
-                            ${isProfileView ? 'text-gray-400' : 'text-gray-600'}
-                        `}>
+                        <span className="font-bold text-sm text-gray-600">
                             {likeCount}
                         </span>
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <button className={`text-2xl transition-colors 
-                            ${isProfileView ? 'text-gray-400 hover:text-gray-300' : 'text-gray-300 hover:text-gray-400'}
-                        `}>
+                        <button className="text-2xl transition-colors text-gray-300 hover:text-gray-400">
                             💬
                         </button>
-                        <span className={`font-bold text-sm 
-                            ${isProfileView ? 'text-gray-400' : 'text-gray-600'}
-                        `}>
+                        <span className="font-bold text-sm text-gray-600">
                             {commentCount}
                         </span>
                     </div>
                 </div>
 
-                <span className={`text-xs 
-                    ${isProfileView ? 'text-gray-500' : 'text-gray-400'}
-                `}>
+                <span className="text-xs text-gray-400">
                     {new Date(item.created_at).toLocaleDateString()}
                 </span>
             </div>

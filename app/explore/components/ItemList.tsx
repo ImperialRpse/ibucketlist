@@ -15,7 +15,7 @@ export function ItemList({ items }: Props) {
       {items.map(item => (
         <Link
           key={item.id}
-          href={`/item/${item.id}`}
+          href={`/item?id=${item.id}`}
           className="block bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
         >
           <h3 className="font-bold text-gray-800 line-clamp-2">{item.title}</h3>

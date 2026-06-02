@@ -78,7 +78,7 @@ export const AddItemModal = ({
                     className="w-full border-2 p-3 rounded-xl mb-4 bg-gray-50 focus:border-blue-500 outline-none resize-none"
                     value={newItemDescription}
                     onChange={(e) => setNewItemDescription(e.target.value)}
-                    placeholder="Details（optional）"
+                    placeholder="Details (optional)"
                     rows={3}
                 />
                 <div className="flex gap-2">

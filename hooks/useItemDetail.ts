@@ -146,7 +146,7 @@ export const useItemDetail = (itemId: string) => {
     };
 
     const toggleLike = async () => {
-        if (!currentUserId || !item) return alert("Loginが必要です");
+        if (!currentUserId || !item) return alert("Login required");
         const isLikedByMe = item.likes?.some((like) => like.user_id === currentUserId);
 
         if (isLikedByMe) {

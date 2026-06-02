@@ -56,7 +56,7 @@ export const EditItemModal = ({
                     className="w-full border-2 p-3 rounded-xl mb-4 bg-gray-50 focus:border-blue-500 outline-none resize-none"
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Details（optional）"
+                    placeholder="Details (optional)"
                     rows={3}
                 />
                 <div className="flex gap-2">

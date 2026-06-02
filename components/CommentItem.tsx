@@ -40,7 +40,7 @@ export const CommentItem = ({
     return (
         <div className={`${depth > 0 ? 'ml-8 border-l-2 border-blue-100 pl-3' : ''}`}>
             <div className="flex gap-3 py-3 items-start">
-                <Link href={`/profile/${comment.user_id}`}>
+                <Link href={`/profile?id=${comment.user_id}`}>
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
                         {comment.profiles?.avatar_url ? (
                             <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -54,7 +54,7 @@ export const CommentItem = ({
 
                 <div className="flex flex-col flex-1 min-w-0">
                     <Link
-                        href={`/profile/${comment.user_id}`}
+                        href={`/profile?id=${comment.user_id}`}
                         className="text-xs font-bold text-blue-600 hover:underline inline-block w-fit"
                     >
                         {comment.profiles?.display_name || 'Username'}

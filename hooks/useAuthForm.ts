@@ -44,7 +44,12 @@ export const useAuthForm = () => {
       }
     }
 
-    alert('確認メールをSendしました！メール内のリンクをクリックして登録を完了させてください。');
+    if (data.session || data.user) {
+      alert('Signed up successfully!');
+      router.push('/');
+    } else {
+      alert('Sign up completed. Please sign in.');
+    }
   };
 
   // Login処理
@@ -55,7 +60,7 @@ export const useAuthForm = () => {
     });
     if (error) alert(error.message);
     else {
-      alert('Login成功！');
+      alert('Logged in successfully!');
       router.push('/'); // Login後にリスト画面へ移動
     }
   };

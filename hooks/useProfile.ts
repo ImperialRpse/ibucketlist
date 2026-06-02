@@ -146,7 +146,7 @@ export const useProfile = (profileUserId: string) => {
 
     const toggleLike = async (e: React.MouseEvent, itemId: string, isLikedByMe: boolean) => {
         e.stopPropagation();
-        if (!currentUserId) return alert('Loginが必要です');
+        if (!currentUserId) return alert('Login required');
         if (isLikedByMe) {
             await supabase.from('likes').delete().eq('item_id', itemId).eq('user_id', currentUserId);
         } else {
@@ -159,7 +159,7 @@ export const useProfile = (profileUserId: string) => {
 
     const toggleFollow = async () => {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return alert("Loginが必要です");
+        if (!user) return alert("Login required");
 
         if (isFollowing) {
             // フォロー解除
@@ -255,13 +255,13 @@ export const useProfile = (profileUserId: string) => {
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('bucket_photos')
+                .from('bucket-images')
                 .upload(filePath, imageFile);
 
             if (uploadError) throw uploadError;
 
             const { data: { publicUrl } } = supabase.storage
-                .from('bucket_photos')
+                .from('bucket-images')
                 .getPublicUrl(filePath);
 
             await supabase
@@ -294,7 +294,7 @@ export const useProfile = (profileUserId: string) => {
 
     const handleStartMessage = async () => {
         const { data: { user: me } } = await supabase.auth.getUser();
-        if (!me) return alert("Loginが必要です");
+        if (!me) return alert("Login required");
         if (me.id === profileUserId) return;
 
         setLoading(true);
@@ -323,7 +323,7 @@ export const useProfile = (profileUserId: string) => {
             }
 
             if (roomId) {
-                router.push(`/messages/${roomId}`);
+                router.push(`/messages?id=${roomId}`);
             } else {
                 const { data: newRoom, error: roomError } = await supabase
                     .from('dm_rooms')
@@ -342,7 +342,7 @@ export const useProfile = (profileUserId: string) => {
 
                 if (partError) throw partError;
 
-                router.push(`/messages/${newRoom.id}`);
+                router.push(`/messages?id=${newRoom.id}`);
             }
         } catch (error) {
             console.error("Detailsエラー:", JSON.stringify(error, null, 2), error);

@@ -27,7 +27,7 @@ export function UserList({ profiles }: Props) {
       {profiles.map(profile => (
         <Link
           key={profile.id}
-          href={`/profile/${profile.id}`}
+          href={`/profile?id=${profile.id}`}
           className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
         >
           <UserAvatar profile={profile} />
